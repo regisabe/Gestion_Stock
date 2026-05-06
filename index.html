@@ -3688,7 +3688,7 @@ function pageClients(c, ta) {
   <div class="table-container">
     <div class="table-header"><span class="table-title">👥 ${getClientsData().length} client(s)</span></div>
     <div class="table-scroll"><table><thead><tr>
-      <th>Nom</th><th>Contact</th><th>Téléphone</th><th>Type</th><th>Achats</th><th>CA Total</th><th>Actions</th>
+      <th>Nom</th><th>Prénoms</th><th>Téléphone</th><th>Type</th><th>Achats</th><th>CA Total</th><th>Actions</th>
     </tr></thead><tbody>
     ${getClientsData().map(cl => {
       const achats = ventes.filter(v=>v.clientId===cl.id);
