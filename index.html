@@ -3695,7 +3695,7 @@ function pageClients(c, ta) {
       const ca = achats.reduce((s,v)=>s+v.total,0);
       return `<tr>
         <td><strong>${cl.nom}</strong></td>
-        <td>${cl.Prénoms||'—'}</td>
+        <td>${cl.contact||'—'}</td>
         <td>${cl.tel||'—'}</td>
         <td><span class="badge ${cl.type==='Professionnel'?'badge-blue':'badge-gray'}">${cl.type||'Particulier'}</span></td>
         <td>${achats.length} commande(s)</td>
