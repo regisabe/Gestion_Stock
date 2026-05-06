@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MagasinPro</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  background: #eef1f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── CARD ── */
+.card {
+  display: flex;
+  width: 780px;
+  min-height: 420px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(30, 50, 120, .18), 0 2px 8px rgba(0,0,0,.06);
+  background: #fff;
+}
+
+/* ── LEFT ── */
+.card-left {
+  width: 260px;
+  min-width: 260px;
+  background: linear-gradient(160deg, #2a5bd7 0%, #1a44c2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.card-left::before {
+  content: '';
+  position: absolute;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  top: -80px; right: -80px;
+}
+.card-left::after {
+  content: '';
+  position: absolute;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  bottom: -50px; left: -50px;
+}
+.app-icon {
+  width: 72px; height: 72px;
+  background: rgba(255,255,255,.18);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin-bottom: 20px;
+  position: relative; z-index: 1;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+.app-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.3px;
+  position: relative; z-index: 1;
+  margin-bottom: 6px;
+}
+.app-name span { color: rgba(255,255,255,.6); }
+.app-sub {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,.45);
+  text-transform: uppercase;
+  position: relative; z-index: 1;
+}
+.card-left-footer {
+  position: absolute;
+  bottom: 16px;
+  font-size: 10px;
+  color: rgba(255,255,255,.3);
+  text-align: center;
+  z-index: 1;
+  padding: 0 16px;
+  line-height: 1.5;
+}
+
+/* ── RIGHT ── */
+.card-right {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Panels */
+.panel {
+  position: absolute;
+  inset: 0;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  transition: transform .38s cubic-bezier(.76,0,.24,1), opacity .3s;
+  will-change: transform, opacity;
+  overflow-y: auto;
+}
+.panel.active   { transform: translateX(0);    opacity: 1; pointer-events: all; }
+.panel.to-left  { transform: translateX(-40px); opacity: 0; pointer-events: none; }
+.panel.to-right { transform: translateX(40px);  opacity: 0; pointer-events: none; }
+
+/* ── PANEL: COMPANIES ── */
+.pr-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 4px;
+  letter-spacing: -.2px;
+}
+.pr-sub {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 24px;
+}
+
+.co-list { display: flex; flex-direction: column; gap: 8px; }
+
+.co-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #e8edf5;
+  background: #f9fafc;
+  cursor: pointer;
+  transition: all .18s;
+  position: relative;
+}
+.co-row:hover {
+  border-color: #2a5bd7;
+  background: #f0f4ff;
+  box-shadow: 0 4px 16px rgba(42,91,215,.1);
+}
+.co-row-icon {
+  width: 42px; height: 42px; min-width: 42px;
+  border-radius: 11px;
+  background: var(--co-bg, rgba(42,91,215,.1));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.co-row-info { flex: 1; min-width: 0; }
+.co-row-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.co-row-type {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.co-row-arrow {
+  color: #94a3b8;
+  font-size: 16px;
+  transition: all .18s;
+}
+.co-row:hover .co-row-arrow { color: #2a5bd7; transform: translateX(3px); }
+
+/* Bottom bar */
+.pr-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pr-foot-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2a5bd7;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: opacity .15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pr-foot-btn:hover { opacity: .7; }
+.pr-foot-sep { color: #d1d5db; font-size: 13px; }
+
+/* ── PANEL: LOGIN ── */
+.pl-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 28px;
+  transition: color .15s;
+}
+.pl-back:hover { color: #2a5bd7; }
+
+.pl-company-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f0f4ff;
+  border: 1.5px solid #d4e0ff;
+  margin-bottom: 24px;
+}
+.pl-company-icon {
+  width: 38px; height: 38px; min-width: 38px;
+  border-radius: 10px;
+  background: rgba(42,91,215,.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.pl-company-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+.pl-company-type { font-size: 11px; color: #94a3b8; }
+
+.pl-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 20px;
+  letter-spacing: -.2px;
+}
+
+/* Sites */
+.site-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+.site-btn {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-family: 'Inter', sans-serif;
+}
+.site-btn:hover { border-color: #2a5bd7; color: #2a5bd7; }
+.site-btn.sel { border-color: #2a5bd7; background: #eef2ff; color: #2a5bd7; }
+.site-btn-icon { font-size: 16px; }
+.site-btn-type { font-size: 10px; color: #94a3b8; }
+.site-btn.sel .site-btn-type { color: #6b8de3; }
+
+/* Form */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.inp-wrap { position: relative; }
+.inp-wrap .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
+.inp-wrap input {
+  width: 100%;
+  padding: 11px 12px 11px 38px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: all .18s;
+}
+.inp-wrap input:focus { border-color: #2a5bd7; background: #fff; box-shadow: 0 0 0 3px rgba(42,91,215,.09); }
+.inp-wrap input::placeholder { color: #cbd5e1; }
+.pw-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 14px; color: #94a3b8; cursor: pointer; transition: color .15s; }
+.pw-btn:hover { color: #2a5bd7; }
+
+.err-box {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 13px; border-radius: 10px;
+  border: 1px solid #fca5a5; background: #fef2f2;
+  color: #991b1b; font-size: 13px; font-weight: 600;
+  margin-bottom: 14px;
+}
+.err-box::before { content: '⚠️'; font-size: 13px; }
+
+.btn-login {
+  width: 100%; padding: 12px;
+  background: #1a44c2;
+  color: #fff;
+  border: none; border-radius: 10px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 800;
+  cursor: pointer; transition: all .2s;
+  letter-spacing: -.1px;
+  box-shadow: 0 4px 16px rgba(26,68,194,.3);
+}
+.btn-login:hover { background: #2a5bd7; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(26,68,194,.38); }
+.btn-login:active { transform: none; }
+.btn-login.loading { opacity: .65; pointer-events: none; }
+
+.hints-box {
+  margin-top: 16px; padding: 12px 14px;
+  border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc;
+}
+.hints-head { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 8px; }
+.hint-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+.hint-row:last-child { border-bottom: none; padding-bottom: 0; }
+.hint-role { font-weight: 700; color: #374151; }
+.hint-cred { font-family: monospace; font-size: 11px; background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 5px; }
+
+/* ══════════════════════════════════
+   ONBOARDING OVERLAY
+══════════════════════════════════ */
+#overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(10,20,50,.45);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+#overlay.hidden { display: none; }
+
+.ob-card {
+  background: #fff;
+  border-radius: 18px;
+  width: 100%; max-width: 520px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.2);
+  overflow: hidden;
+  animation: popIn .3s cubic-bezier(.16,1,.3,1);
+}
+@keyframes popIn { from{opacity:0;transform:scale(.94);}to{opacity:1;transform:scale(1);} }
+
+.ob-header {
+  background: linear-gradient(135deg, #2a5bd7, #1a44c2);
+  padding: 24px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ob-header-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:#fff; }
+.ob-header-step { font-size:12px; color:rgba(255,255,255,.6); font-weight:600; }
+.ob-prog { height: 3px; background: rgba(255,255,255,.2); }
+.ob-prog-fill { height: 100%; background: rgba(255,255,255,.8); transition: width .4s; }
+
+.ob-body { padding: 28px; }
+
+.ob-label { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 6px; display: block; }
+.ob-group { margin-bottom: 16px; }
+.ob-input {
+  width: 100%; padding: 11px 12px 11px 38px;
+  border: 1.5px solid #e2e8f0; border-radius: 10px;
+  background: #f8fafc; color: #0f172a;
+  font-size: 13.5px; font-weight: 500; font-family: 'Inter', sans-serif;
+  outline: none; transition: all .18s;
+}
+.ob-input:focus { border-color: #2a5bd7; background: #fff; box-shadow: 0 0 0 3px rgba(42,91,215,.09); }
+.ob-input::placeholder { color: #cbd5e1; }
+.ob-select { padding-left: 38px !important; }
+.ob-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.icon-grid { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.icon-opt {
+  width: 38px; height: 38px; border-radius: 9px;
+  border: 1.5px solid #e2e8f0; background: #f8fafc;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; transition: all .15s;
+}
+.icon-opt:hover { border-color: #2a5bd7; transform: scale(1.05); }
+.icon-opt.sel { border-color: #2a5bd7; background: #eef2ff; box-shadow: 0 0 0 3px rgba(42,91,215,.1); }
+
+.ob-err { display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:9px;border:1px solid #fca5a5;background:#fef2f2;color:#991b1b;font-size:12.5px;font-weight:600;margin-bottom:14px; }
+.ob-err::before { content:'⚠️'; }
+
+.ob-footer {
+  padding: 16px 28px;
+  border-top: 1px solid #f1f5f9;
+  display: flex; align-items: center; gap: 10px;
+}
+.ob-btn-next {
+  flex: 1; padding: 12px; background: #1a44c2; color: #fff;
+  border: none; border-radius: 10px;
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800;
+  cursor: pointer; transition: all .2s;
+  box-shadow: 0 4px 14px rgba(26,68,194,.28);
+}
+.ob-btn-next:hover { background: #2a5bd7; }
+.ob-btn-next:disabled { opacity: .6; pointer-events: none; }
+.ob-btn-prev {
+  padding: 11px 16px; background: #f1f5f9; border: none;
+  border-radius: 10px; color: #64748b;
+  font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s;
+  font-family: 'Inter', sans-serif;
+}
+.ob-btn-prev:hover { background: #e2e8f0; }
+
+.hidden { display: none !important; }
+
+@media (max-width: 700px) {
+  body { align-items: flex-start; padding: 0; }
+  .card { width: 100%; min-height: 100vh; border-radius: 0; flex-direction: column; }
+  .card-left { width: 100%; min-width: 0; min-height: 160px; }
+  .ob-2col { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ CARD ══ -->
+<div class="card">
+
+  <!-- LEFT -->
+  <div class="card-left">
+    <div class="app-icon">🏪</div>
+    <div class="app-name">Magasin<span>Pro</span></div>
+    <div class="app-sub">Gestion de stock</div>
+    <div class="card-left-footer" id="lf-version">v1.0 · Abidjan CI</div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="card-right">
+
+    <!-- PANEL: LISTE DES BOUTIQUES -->
+    <div class="panel active" id="panel-list">
+      <div class="pr-title">Choisir un espace</div>
+      <div class="pr-sub" id="pr-count">—</div>
+      <div class="co-list" id="co-list"></div>
+      <div class="pr-footer">
+        <button class="pr-foot-btn" onclick="openOnboarding()">＋ Créer un espace</button>
+      </div>
+    </div>
+
+    <!-- PANEL: CONNEXION -->
+    <div class="panel to-right" id="panel-login">
+      <button class="pl-back" onclick="showList()">← Retour</button>
+
+      <div class="pl-company-row">
+        <div class="pl-company-icon" id="pl-ico">🏪</div>
+        <div>
+          <div class="pl-company-name" id="pl-name">—</div>
+          <div class="pl-company-type" id="pl-type">—</div>
+        </div>
+      </div>
+
+      <div class="pl-title">Connexion</div>
+
+      <!-- Sites -->
+      <div id="pl-sites" class="hidden">
+        <div class="site-grid" id="pl-site-grid"></div>
+      </div>
+
+      <div id="pl-err" class="err-box hidden"></div>
+
+      <div class="form-group">
+        <label>Identifiant</label>
+        <div class="inp-wrap">
+          <span class="ico">👤</span>
+          <input id="pl-user" autocomplete="username" placeholder="Ex: admin" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <div class="inp-wrap">
+          <span class="ico">🔐</span>
+          <input id="pl-pass" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+          <button class="pw-btn" onclick="togglePw(this)" type="button">👁</button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="pl-btn" onclick="doLogin()">Se connecter</button>
+
+      <div id="pl-hints" class="hints-box hidden">
+        <div class="hints-head">Comptes disponibles</div>
+        <div id="pl-hints-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ ONBOARDING OVERLAY ══ -->
+<div id="overlay" class="hidden">
+  <div class="ob-card">
+
+    <div class="ob-header">
+      <div class="ob-header-title" id="ob-title">Créer un espace</div>
+      <div class="ob-header-step" id="ob-step-lbl">Étape 1 / 2</div>
+    </div>
+    <div class="ob-prog"><div class="ob-prog-fill" id="ob-prog" style="width:50%"></div></div>
+
+    <div class="ob-body">
+
+      <!-- STEP 1 -->
+      <div id="ob-s1">
+        <div id="s1-err" class="ob-err hidden"></div>
+        <div class="ob-group">
+          <span class="ob-label">Icône</span>
+          <div class="icon-grid" id="icon-grid"></div>
+          <input type="hidden" id="s1-icon" value="🏪">
+        </div>
+        <div class="ob-group">
+          <span class="ob-label">Nom de la boutique *</span>
+          <div class="inp-wrap"><span class="ico">🏪</span><input class="ob-input" id="s1-nom" placeholder="Ex: Épicerie Kouamé…"></div>
+        </div>
+        <div class="ob-2col">
+          <div class="ob-group">
+            <span class="ob-label">Type d'activité</span>
+            <div class="inp-wrap"><span class="ico">🏷️</span>
+              <select class="ob-input ob-select" id="s1-type" onchange="onTypeChange()">
+                <option value="magasin">🏪 Commerce général</option>
+                <option value="epicerie">🛒 Épicerie / Supermarché</option>
+                <option value="pharmacie">💊 Pharmacie</option>
+                <option value="vetements">👗 Mode / Vêtements</option>
+                <option value="tech">📱 High-tech / Électronique</option>
+                <option value="restauration">🍕 Restauration</option>
+                <option value="btp">🏗️ BTP / Matériaux</option>
+                <option value="cosmetique">🧴 Cosmétique / Beauté</option>
+                <option value="librairie">📚 Librairie / Papeterie</option>
+                <option value="entrepot">🏭 Entrepôt / Grossiste</option>
+                <option value="autre">📦 Autre</option>
+              </select>
+            </div>
+          </div>
+          <div class="ob-group">
+            <span class="ob-label">Devise</span>
+            <div class="inp-wrap"><span class="ico">💱</span>
+              <select class="ob-input ob-select" id="s1-devise">
+                <option value="FCFA" selected>FCFA</option>
+                <option value="XOF">XOF</option>
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+                <option value="GHS">GHS</option>
+                <option value="NGN">NGN</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="ob-2col">
+          <div class="ob-group">
+            <span class="ob-label">Téléphone</span>
+            <div class="inp-wrap"><span class="ico">📞</span><input class="ob-input" id="s1-tel" placeholder="+225 07 00 00 00"></div>
+          </div>
+          <div class="ob-group">
+            <span class="ob-label">Ville / Adresse</span>
+            <div class="inp-wrap"><span class="ico">📍</span><input class="ob-input" id="s1-adr" placeholder="Ex: Abidjan, Cocody"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div id="ob-s2" class="hidden">
+        <div id="s2-err" class="ob-err hidden"></div>
+        <div class="ob-group">
+          <span class="ob-label">Nom complet *</span>
+          <div class="inp-wrap"><span class="ico">👤</span><input class="ob-input" id="s2-nom" placeholder="Ex: Kouamé Jean"></div>
+        </div>
+        <div class="ob-group">
+          <span class="ob-label">Identifiant de connexion *</span>
+          <div class="inp-wrap"><span class="ico">🔑</span><input class="ob-input" id="s2-user" placeholder="Ex: admin" autocomplete="username"></div>
+        </div>
+        <div class="ob-2col">
+          <div class="ob-group">
+            <span class="ob-label">Mot de passe *</span>
+            <div class="inp-wrap"><span class="ico">🔐</span><input class="ob-input" id="s2-pass" type="password" placeholder="Min. 4 caractères"><button class="pw-btn" onclick="togglePw(this)" type="button">👁</button></div>
+          </div>
+          <div class="ob-group">
+            <span class="ob-label">Confirmer *</span>
+            <div class="inp-wrap"><span class="ico">✅</span><input class="ob-input" id="s2-confirm" type="password" placeholder="Répétez"><button class="pw-btn" onclick="togglePw(this)" type="button">👁</button></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="ob-footer">
+      <button class="ob-btn-prev" id="ob-prev" onclick="obPrev()">← Retour</button>
+      <button class="ob-btn-next" id="ob-next" onclick="obNext()">Suivant →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══ STORAGE ══ */
+const gSave = (k,v) => localStorage.setItem('mp_'+k, JSON.stringify(v));
+const gLoad = (k,d) => { try{const r=localStorage.getItem('mp_'+k);return r!==null?JSON.parse(r):d;}catch{return d;} };
+const cSave = (id,k,v) => localStorage.setItem(`mp_${id}_${k}`, JSON.stringify(v));
+const cLoad = (id,k,d) => { try{const r=localStorage.getItem(`mp_${id}_${k}`);return r!==null?JSON.parse(r):d;}catch{return d;} };
+const esc = v => String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).substr(2,9);
+
+/* ══ TYPES ══ */
+const TYPES = {
+  magasin:     {label:'Commerce général',      icone:'🏪', color:'#1d4ed8'},
+  epicerie:    {label:'Épicerie / Supermarché', icone:'🛒', color:'#059669'},
+  pharmacie:   {label:'Pharmacie',             icone:'💊', color:'#0891b2'},
+  vetements:   {label:'Mode / Vêtements',      icone:'👗', color:'#7c3aed'},
+  tech:        {label:'High-tech / Élec.',     icone:'📱', color:'#2563eb'},
+  restauration:{label:'Restauration',          icone:'🍕', color:'#ea580c'},
+  btp:         {label:'BTP / Matériaux',       icone:'🏗️', color:'#92400e'},
+  cosmetique:  {label:'Cosmétique / Beauté',   icone:'🧴', color:'#db2777'},
+  librairie:   {label:'Librairie',             icone:'📚', color:'#6d28d9'},
+  entrepot:    {label:'Entrepôt / Grossiste',  icone:'🏭', color:'#475569'},
+  autre:       {label:'Autre',                 icone:'📦', color:'#475569'},
+};
+const DEFAULT_CATS = {
+  magasin:     [{nom:'Général',icone:'📦'},{nom:'Alimentation',icone:'🛒'},{nom:'Hygiène',icone:'🧴'},{nom:'Électricité',icone:'⚡'}],
+  epicerie:    [{nom:'Épicerie',icone:'🛒'},{nom:'Boissons',icone:'🍾'},{nom:'Frais',icone:'❄️'},{nom:'Hygiène',icone:'🧴'}],
+  pharmacie:   [{nom:'Médicaments',icone:'💊'},{nom:'Cosmétique',icone:'🧴'},{nom:'Matériel médical',icone:'🩺'},{nom:'Parapharmacie',icone:'🌿'}],
+  vetements:   [{nom:'Homme',icone:'👔'},{nom:'Femme',icone:'👗'},{nom:'Enfant',icone:'👶'},{nom:'Accessoires',icone:'👜'}],
+  tech:        [{nom:'Téléphones',icone:'📱'},{nom:'Ordinateurs',icone:'💻'},{nom:'Accessoires',icone:'🎧'},{nom:'TV / Son',icone:'📺'}],
+  restauration:[{nom:'Plats',icone:'🍽️'},{nom:'Boissons',icone:'🥤'},{nom:'Desserts',icone:'🍰'},{nom:'Ingrédients',icone:'🧂'}],
+  btp:         [{nom:'Ciment / Béton',icone:'🏗️'},{nom:'Quincaillerie',icone:'🔧'},{nom:'Peinture',icone:'🎨'},{nom:'Plomberie',icone:'🚿'}],
+  cosmetique:  [{nom:'Soins visage',icone:'✨'},{nom:'Soins corps',icone:'🧴'},{nom:'Coiffure',icone:'💇'},{nom:'Maquillage',icone:'💄'}],
+  librairie:   [{nom:'Livres',icone:'📚'},{nom:'Fournitures',icone:'✏️'},{nom:'Papeterie',icone:'🗒️'},{nom:'Cadeaux',icone:'🎁'}],
+  entrepot:    [{nom:'Général',icone:'📦'},{nom:'En vrac',icone:'🏭'},{nom:'Emballage',icone:'📦'}],
+  autre:       [{nom:'Général',icone:'📦'},{nom:'Divers',icone:'🗂️'}],
+};
+const MODULE_IDS = ['dashboard','articles','categories','fournisseurs','stock','entrees','sorties','inventaire','alertes','transferts','ventes','caisse','clients','commandes','rapports','config'];
+const ROLE_TPLS = {
+  Admin:{modules:[...MODULE_IDS]},
+  Caissier:{modules:['dashboard','ventes','caisse','clients']},
+  'Gestionnaire de stock':{modules:['dashboard','articles','categories','fournisseurs','stock','entrees','sorties','inventaire','alertes','commandes','rapports']},
+};
+const AUTH_HINTS = [
+  {role:'Admin',username:'admin',password:'admin123'},
+  {role:'Caissier',username:'caissier',password:'caisse123'},
+  {role:'Gestionnaire de stock',username:'stock',password:'stock123'},
+];
+const ICONS = ['🏪','🛒','💊','👗','📱','🍕','🏗️','🧴','📚','🏭','📦','🏬','☕','🐟','🥩','💻','🎵','🚗','🏦','🌿'];
+
+let companies = [], selCo = null, selSiteId = null;
+
+/* ══ USERS ══ */
+function normalizeUser(u={}){
+  const role=ROLE_TPLS[u.role]?u.role:'Caissier';
+  const username=String(u.username||'').trim().toLowerCase();
+  return{id:u.id||uid(),nom:String(u.nom||username).trim(),username,password:String(u.password||'1234'),role,actif:u.actif!==false,modules:u.modules?.length?u.modules:ROLE_TPLS[role].modules,createdAt:u.createdAt||Date.now(),lastLoginAt:u.lastLoginAt||null};
+}
+function normalizeUsers(list){
+  const base=Array.isArray(list)&&list.length?list:[];
+  const norm=base.map(normalizeUser).filter(u=>u.username);
+  if(!norm.some(u=>u.role==='Admin'&&u.actif!==false)) norm.unshift(normalizeUser({id:'u-admin',nom:'Administrateur',username:'admin',password:'admin123',role:'Admin',actif:true,modules:[...MODULE_IDS]}));
+  return norm;
+}
+
+/* ══ PANELS ══ */
+function showList(){
+  go('panel-list','panel-login','right');
+  selCo = null;
+}
+function showLogin(){
+  go('panel-login','panel-list','left');
+  setTimeout(()=>document.getElementById('pl-user').focus(),400);
+}
+function go(show, hide, hideDir){
+  document.getElementById(show).className = 'panel active';
+  document.getElementById(hide).className = 'panel ' + (hideDir==='left' ? 'to-left' : 'to-right');
+}
+
+/* ══ RENDER COMPANIES ══ */
+function renderList(){
+  const list = document.getElementById('co-list');
+  const count = document.getElementById('pr-count');
+  count.textContent = `${companies.length} espace${companies.length>1?'s':''} disponible${companies.length>1?'s':''}`;
+  list.innerHTML = companies.map(c=>{
+    const info = TYPES[c.type]||TYPES.autre;
+    return `
+    <div class="co-row" style="--co-bg:${c.color||info.color}18" onclick="selectCo('${c.id}')">
+      <div class="co-row-icon" style="background:${c.color||info.color}18">${c.icone||info.icone}</div>
+      <div class="co-row-info">
+        <div class="co-row-name">${esc(c.nom)}</div>
+        <div class="co-row-type">${info.label}</div>
+      </div>
+      <div class="co-row-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+
+/* ══ SELECT COMPANY ══ */
+function selectCo(id){
+  selCo = id;
+  const c = companies.find(x=>x.id===id);
+  if(!c) return;
+  const info = TYPES[c.type]||TYPES.autre;
+  document.getElementById('pl-ico').textContent = c.icone||info.icone;
+  document.getElementById('pl-name').textContent = c.nom;
+  document.getElementById('pl-type').textContent = info.label;
+
+  // Sites
+  const sites = cLoad(id,'sites',[]);
+  selSiteId = cLoad(id,'currentSiteId','site-main')||'site-main';
+  const sec = document.getElementById('pl-sites');
+  const sg  = document.getElementById('pl-site-grid');
+  if(sites.length>1){
+    sec.classList.remove('hidden');
+    sg.innerHTML = sites.map(s=>`<button class="site-btn ${s.id===selSiteId?'sel':''}" onclick="selSite('${s.id}',this)"><span class="site-btn-icon">${s.icone||'🏪'}</span><span>${esc(s.nom)}</span><span class="site-btn-type">${s.type==='entrepot'?'Entrepôt':'Magasin'}</span></button>`).join('');
+  } else { sec.classList.add('hidden'); selSiteId=sites[0]?.id||'site-main'; }
+
+  // Hints
+  const users = normalizeUsers(cLoad(id,'users',[]));
+  const hints = AUTH_HINTS.filter(h=>users.some(u=>u.username===h.username&&u.password===h.password&&u.actif!==false));
+  const hEl=document.getElementById('pl-hints'), hl=document.getElementById('pl-hints-list');
+  if(hints.length){ hEl.classList.remove('hidden'); hl.innerHTML=hints.map(h=>`<div class="hint-row"><span class="hint-role">${h.role}</span><span class="hint-cred">${h.username} / ${h.password}</span></div>`).join(''); }
+  else hEl.classList.add('hidden');
+
+  document.getElementById('pl-err').classList.add('hidden');
+  document.getElementById('pl-user').value='';
+  document.getElementById('pl-pass').value='';
+  showLogin();
+}
+function selSite(id,el){selSiteId=id;document.querySelectorAll('.site-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');}
+
+/* ══ LOGIN ══ */
+function showErr(id, msg){ const el=document.getElementById(id); el.textContent=msg; el.classList.toggle('hidden',!msg); }
+
+function doLogin(){
+  const username=document.getElementById('pl-user').value.trim().toLowerCase();
+  const password=document.getElementById('pl-pass').value;
+  showErr('pl-err','');
+  if(!username||!password){showErr('pl-err','Veuillez saisir votre identifiant et mot de passe.');return;}
+  const btn=document.getElementById('pl-btn');
+  btn.textContent='Connexion…'; btn.classList.add('loading');
+  setTimeout(()=>{
+    btn.textContent='Se connecter'; btn.classList.remove('loading');
+    const users=normalizeUsers(cLoad(selCo,'users',[]));
+    const user=users.find(u=>u.username===username&&u.password===password&&u.actif!==false);
+    if(!user){document.getElementById('pl-pass').value='';showErr('pl-err','Identifiants invalides ou compte inactif.');return;}
+    user.lastLoginAt=Date.now();
+    cSave(selCo,'users',users);
+    cSave(selCo,'sessionUserId',user.id);
+    cSave(selCo,'currentSiteId',selSiteId);
+    gSave('currentCompanyId',selCo);
+    window.location.href='index.html';
+  },380);
+}
+
+/* ══ ONBOARDING ══ */
+let obStep = 1;
+function openOnboarding(){
+  obStep=1; updateObStep();
+  ['s1-nom','s1-tel','s1-adr','s2-nom','s2-pass','s2-confirm'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('s2-user').value='admin';
+  document.getElementById('s1-type').value='magasin';
+  document.getElementById('s1-icon').value='🏪';
+  ['s1-err','s2-err'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  renderIconGrid('🏪');
+  document.getElementById('overlay').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('s1-nom').focus(),80);
+}
+function closeOnboarding(){ document.getElementById('overlay').classList.add('hidden'); }
+function obPrev(){ if(obStep===1)closeOnboarding(); else{obStep--;updateObStep();} }
+function obNext(){ if(obStep===1)step1Next(); else createCompany(); }
+
+function updateObStep(){
+  document.getElementById('ob-s1').classList.toggle('hidden',obStep!==1);
+  document.getElementById('ob-s2').classList.toggle('hidden',obStep!==2);
+  document.getElementById('ob-step-lbl').textContent=`Étape ${obStep} / 2`;
+  document.getElementById('ob-title').textContent = obStep===1 ? 'Créer un espace' : 'Compte administrateur';
+  document.getElementById('ob-prog').style.width = obStep===1?'50%':'100%';
+  document.getElementById('ob-prev').textContent = obStep===1 ? '✕ Annuler' : '← Retour';
+  document.getElementById('ob-next').textContent = obStep===1 ? 'Suivant →' : '🏪 Créer';
+}
+
+function step1Next(){
+  const nom=document.getElementById('s1-nom').value.trim();
+  if(!nom){showErr('s1-err','Le nom de la boutique est requis.');return;}
+  showErr('s1-err','');
+  obStep=2; updateObStep();
+  setTimeout(()=>document.getElementById('s2-nom').focus(),80);
+}
+
+function createCompany(){
+  const nom=document.getElementById('s2-nom').value.trim();
+  const username=document.getElementById('s2-user').value.trim().toLowerCase();
+  const pass=document.getElementById('s2-pass').value;
+  const confirm=document.getElementById('s2-confirm').value;
+  if(!nom){showErr('s2-err','Nom complet requis.');return;}
+  if(!username){showErr('s2-err','Identifiant requis.');return;}
+  if(pass.length<4){showErr('s2-err','Mot de passe trop court (min. 4 caractères).');return;}
+  if(pass!==confirm){showErr('s2-err','Les mots de passe ne correspondent pas.');return;}
+  showErr('s2-err','');
+  const btn=document.getElementById('ob-next');
+  btn.textContent='⏳ Création…'; btn.disabled=true;
+  setTimeout(()=>{
+    const compId='co-'+uid();
+    const type=document.getElementById('s1-type').value;
+    const info=TYPES[type]||TYPES.autre;
+    const company={id:compId,nom:document.getElementById('s1-nom').value.trim(),type,icone:document.getElementById('s1-icon').value,color:info.color,devise:document.getElementById('s1-devise').value,tel:document.getElementById('s1-tel').value.trim(),adresse:document.getElementById('s1-adr').value.trim(),createdAt:Date.now()};
+    companies.push(company); gSave('companies',companies);
+    cSave(compId,'config',{magasinNom:company.nom,devise:company.devise,tel:company.tel,adresse:company.adresse,tva:18});
+    cSave(compId,'sites',[{id:'site-main',nom:company.nom,type:'magasin',adresse:company.adresse,icone:company.icone,couleur:company.color}]);
+    cSave(compId,'currentSiteId','site-main');
+    const cats=(DEFAULT_CATS[type]||DEFAULT_CATS.autre).map(c=>({id:'cat-'+uid(),nom:c.nom,icone:c.icone,couleur:'#64748b'}));
+    cSave(compId,'categories',cats);
+    ['articles','fournisseurs','clients','entrees','sorties','ventes','commandes','transferts'].forEach(k=>cSave(compId,k,[]));
+    const admin=normalizeUser({id:'u-'+uid(),nom,username,password:pass,role:'Admin',actif:true,modules:[...MODULE_IDS]});
+    cSave(compId,'users',[admin]);
+    cSave(compId,'sessionUserId',admin.id);
+    gSave('currentCompanyId',compId);
+    window.location.href='index.html';
+  },480);
+}
+
+/* ══ ICON GRID ══ */
+function renderIconGrid(sel){
+  document.getElementById('icon-grid').innerHTML=ICONS.map(ic=>`<span class="icon-opt${ic===sel?' sel':''}" onclick="pickIcon('${ic}',this)">${ic}</span>`).join('');
+}
+function pickIcon(ic,el){ document.getElementById('s1-icon').value=ic; document.querySelectorAll('.icon-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); }
+function onTypeChange(){ const info=TYPES[document.getElementById('s1-type').value]||TYPES.autre; document.getElementById('s1-icon').value=info.icone; document.querySelectorAll('.icon-opt').forEach(el=>el.classList.toggle('sel',el.textContent===info.icone)); }
+function togglePw(btn){ const inp=btn.previousElementSibling; inp.type=inp.type==='text'?'password':'text'; btn.textContent=inp.type==='password'?'👁':'🙈'; }
+
+/* ══ INIT ══ */
+companies = gLoad('companies',[]);
+renderIconGrid('🏪');
+
+// Session active ?
+const lastCo=gLoad('currentCompanyId','');
+if(lastCo){
+  const sid=cLoad(lastCo,'sessionUserId','');
+  const users=normalizeUsers(cLoad(lastCo,'users',[]));
+  if(sid&&users.some(u=>u.id===sid&&u.actif!==false)) window.location.replace('index.html');
+}
+
+if(companies.length===0) openOnboarding();
+else renderList();
+</script>
+</body>
+</html>
