@@ -159,6 +159,8 @@ html, body {
   background: var(--co-bg, rgba(42,91,215,.1));
   display: flex; align-items: center; justify-content: center;
   font-size: 22px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 .co-row-info { flex: 1; min-width: 0; }
 .co-row-name {
@@ -859,146 +861,148 @@ function getCoIconHtml(c, size=42) {
 
 function togglePw(btn){ const inp=btn.previousElementSibling; inp.type=inp.type==='text'?'password':'text'; btn.textContent=inp.type==='password'?'👁':'🙈'; }
 
-/* ══ SYNC LOGIC ══ */
-const BLOB_URL = 'https://jsonblob.com/api/jsonBlob';
-const SYNC_KEY_STORE = 'mp_syncKey';
+/* ══ SYNC — JSONBin.io ══ */
+const JB_URL       = 'https://api.jsonbin.io/v3/b';
+const JB_KEY_STORE = 'mp_jsonbinKey';
+const JB_BIN_STORE = 'mp_syncBinId';
+const JB_LAST_SYNC = 'mp_lastSync';
+
+const getJbKey  = () => localStorage.getItem(JB_KEY_STORE) || '';
+const getJbBin  = () => localStorage.getItem(JB_BIN_STORE) || '';
+const setJbKey  = v  => localStorage.setItem(JB_KEY_STORE, v);
+const setJbBin  = v  => localStorage.setItem(JB_BIN_STORE, v);
 
 function gatherSyncData() {
   const cos = gLoad('companies', []);
   const companyData = {};
   const KEYS = ['config','sites','users','categories','articles','fournisseurs','clients','entrees','sorties','ventes','commandes','transferts'];
-  cos.forEach(c => {
-    companyData[c.id] = {};
-    KEYS.forEach(k => { companyData[c.id][k] = cLoad(c.id, k, null); });
-  });
+  cos.forEach(c => { companyData[c.id]={}; KEYS.forEach(k=>{ companyData[c.id][k]=cLoad(c.id,k,null); }); });
   return { version:'1.0', appName:'MagasinPro', syncedAt:Date.now(), companies:cos, companyData };
 }
 
 function restoreSyncData(data) {
   if (!data?.companies) throw new Error('Format de données invalide.');
-  // Fusionner les boutiques (éviter les doublons)
   const existing = gLoad('companies', []);
   const merged = [...existing];
-  data.companies.forEach(c => {
-    if (!merged.find(x => x.id === c.id)) merged.push(c);
-  });
+  data.companies.forEach(c => { if (!merged.find(x=>x.id===c.id)) merged.push(c); });
   gSave('companies', merged);
   Object.entries(data.companyData || {}).forEach(([id, d]) => {
     Object.entries(d).forEach(([k, v]) => { if (v !== null) cSave(id, k, v); });
   });
 }
 
-function syncMsg(id, type, msg) {
-  const el = document.getElementById(id);
-  const colors = { ok:['#d1fae5','#065f46','#10b981'], err:['#fef2f2','#991b1b','#ef4444'], info:['#eff6ff','#1e40af','#3b82f6'] };
-  const [bg, text, icon_c] = colors[type] || colors.info;
-  el.style.cssText = `padding:10px 13px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;background:${bg};color:${text};border:1px solid ${icon_c}40;`;
+function syncMsg(elId, type, msg) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const st = { ok:'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7',
+               err:'background:#fef2f2;color:#991b1b;border:1px solid #fca5a5',
+               info:'background:#eff6ff;color:#1e40af;border:1px solid #93c5fd' };
+  el.style.cssText = `padding:10px 13px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;${st[type]||st.info}`;
   el.innerHTML = `<span>${type==='ok'?'✅':type==='err'?'⚠️':'⏳'}</span> ${msg}`;
   el.classList.remove('hidden');
 }
 
+async function jbCreate(apiKey, payload) {
+  const r = await fetch(JB_URL, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json','X-Master-Key':apiKey,'X-Bin-Name':'MagasinPro','X-Bin-Private':'true' },
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) throw new Error(`JSONBin ${r.status} — Clé API incorrecte ?`);
+  return (await r.json()).metadata.id;
+}
+
+async function jbUpdate(apiKey, binId, payload) {
+  const r = await fetch(`${JB_URL}/${binId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type':'application/json','X-Master-Key':apiKey },
+    body: JSON.stringify(payload)
+  });
+  if (r.status === 404) return false;
+  if (!r.ok) throw new Error(`JSONBin ${r.status}`);
+  return true;
+}
+
+async function jbRead(apiKey, binId) {
+  const r = await fetch(`${JB_URL}/${binId}/latest`, { headers:{'X-Master-Key':apiKey} });
+  if (!r.ok) throw new Error(`JSONBin ${r.status} — Clé ou ID invalide`);
+  return (await r.json()).record;
+}
+
 function openSync(tab) {
   document.getElementById('sync-overlay').classList.remove('hidden');
-  switchSyncTab(tab);
-  // Charger la clé existante
-  const key = localStorage.getItem(SYNC_KEY_STORE) || '';
-  const disp = document.getElementById('sync-key-display');
-  if (key) { document.getElementById('sync-key-val').value = key; disp.classList.remove('hidden'); }
-  else disp.classList.add('hidden');
-  document.getElementById('sync-upload-msg').classList.add('hidden');
-  document.getElementById('sync-recover-msg').classList.add('hidden');
+  switchSyncTab(tab || 'upload');
+  const key = getJbKey(), bin = getJbBin();
+  ['sync-api-key','recover-api-key'].forEach(id=>{ const el=document.getElementById(id); if(el&&key) el.value=key; });
+  const bi = document.getElementById('recover-bin-id'); if (bi&&bin) bi.value=bin;
+  const bd = document.getElementById('sync-bin-display');
+  if (bd) {
+    if (bin) { document.getElementById('sync-bin-val').value=bin; bd.classList.remove('hidden'); }
+    else bd.classList.add('hidden');
+  }
+  ['sync-upload-msg','sync-recover-msg'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('hidden'); });
 }
 function closeSync() { document.getElementById('sync-overlay').classList.add('hidden'); }
 
 function switchSyncTab(tab) {
-  const isUpload = tab === 'upload';
-  document.getElementById('sync-upload').classList.toggle('hidden', !isUpload);
-  document.getElementById('sync-recover').classList.toggle('hidden', isUpload);
-  const tU = document.getElementById('tab-upload');
-  const tR = document.getElementById('tab-recover');
-  tU.style.color = isUpload ? '#2a5bd7' : '#94a3b8';
-  tU.style.borderBottomColor = isUpload ? '#2a5bd7' : 'transparent';
-  tR.style.color = !isUpload ? '#2a5bd7' : '#94a3b8';
-  tR.style.borderBottomColor = !isUpload ? '#2a5bd7' : 'transparent';
+  const isUp = tab==='upload';
+  document.getElementById('sync-upload').classList.toggle('hidden', !isUp);
+  document.getElementById('sync-recover').classList.toggle('hidden', isUp);
+  ['tab-upload','tab-recover'].forEach(id=>{
+    const el=document.getElementById(id), active=(id==='tab-upload')===isUp;
+    el.style.color=active?'#2a5bd7':'#94a3b8';
+    el.style.borderBottomColor=active?'#2a5bd7':'transparent';
+  });
 }
 
 async function doSync() {
+  const key = document.getElementById('sync-api-key').value.trim();
+  if (!key) { syncMsg('sync-upload-msg','err','Entrez votre clé API JSONBin.io ($X-Master-Key).'); return; }
   const btn = document.getElementById('sync-upload-btn');
-  const existingKey = localStorage.getItem(SYNC_KEY_STORE) || '';
-  btn.textContent = '⏳ Synchronisation…'; btn.disabled = true;
-  syncMsg('sync-upload-msg', 'info', 'Envoi des données en cours…');
+  btn.textContent='⏳ Synchronisation…'; btn.disabled=true;
+  syncMsg('sync-upload-msg','info','Envoi des données en cours…');
   try {
     const payload = gatherSyncData();
-    let key;
-    if (existingKey) {
-      // Mise à jour du blob existant
-      const resp = await fetch(`${BLOB_URL}/${existingKey}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (resp.ok) { key = existingKey; }
-      else {
-        // Blob expiré → en créer un nouveau
-        key = await createBlob(payload);
-      }
-    } else {
-      key = await createBlob(payload);
-    }
-    localStorage.setItem(SYNC_KEY_STORE, key);
-    document.getElementById('sync-key-val').value = key;
-    document.getElementById('sync-key-display').classList.remove('hidden');
-    const d = new Date(payload.syncedAt).toLocaleString('fr-FR');
-    syncMsg('sync-upload-msg', 'ok', `Synchronisation réussie · ${payload.companies.length} espace(s) · ${d}`);
-  } catch(e) {
-    syncMsg('sync-upload-msg', 'err', 'Échec de la synchronisation : ' + e.message);
-  }
-  btn.textContent = '☁ Lancer la synchronisation'; btn.disabled = false;
-}
-
-async function createBlob(payload) {
-  const resp = await fetch(BLOB_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  if (!resp.ok) throw new Error(`Serveur : ${resp.status}`);
-  const loc = resp.headers.get('Location') || '';
-  const key = loc.split('/').pop();
-  if (!key) throw new Error('Clé non reçue du serveur.');
-  return key;
+    let binId = getJbBin();
+    if (binId) { const ok = await jbUpdate(key, binId, payload); if (!ok) binId = await jbCreate(key, payload); }
+    else { binId = await jbCreate(key, payload); }
+    setJbKey(key); setJbBin(binId);
+    localStorage.setItem(JB_LAST_SYNC, Date.now());
+    document.getElementById('sync-bin-val').value = binId;
+    document.getElementById('sync-bin-display').classList.remove('hidden');
+    syncMsg('sync-upload-msg','ok',`${payload.companies.length} espace(s) synchronisé(s) · ${new Date(payload.syncedAt).toLocaleString('fr-FR')}`);
+  } catch(e) { syncMsg('sync-upload-msg','err', e.message); }
+  btn.textContent='☁ Synchroniser maintenant'; btn.disabled=false;
 }
 
 async function doRecover() {
-  const key = document.getElementById('recover-key-input').value.trim();
-  if (!key) { syncMsg('sync-recover-msg', 'err', 'Veuillez saisir votre clé de synchronisation.'); return; }
+  const key   = document.getElementById('recover-api-key').value.trim();
+  const binId = document.getElementById('recover-bin-id').value.trim();
+  if (!key)   { syncMsg('sync-recover-msg','err','Entrez votre clé API JSONBin.io.'); return; }
+  if (!binId) { syncMsg('sync-recover-msg','err','Entrez votre ID de bin (affiché après la synchronisation).'); return; }
   const btn = document.getElementById('sync-recover-btn');
-  btn.textContent = '⏳ Récupération…'; btn.disabled = true;
-  syncMsg('sync-recover-msg', 'info', 'Téléchargement des données…');
+  btn.textContent='⏳ Récupération…'; btn.disabled=true;
+  syncMsg('sync-recover-msg','info','Téléchargement en cours…');
   try {
-    const resp = await fetch(`${BLOB_URL}/${key}`);
-    if (!resp.ok) throw new Error(`Clé introuvable ou expirée (${resp.status})`);
-    const data = await resp.json();
-    if (!data?.companies) throw new Error('Les données récupérées sont invalides ou corrompues.');
+    const data = await jbRead(key, binId);
+    if (!data?.companies) throw new Error('Données invalides ou corrompues.');
     restoreSyncData(data);
-    localStorage.setItem(SYNC_KEY_STORE, key);
+    setJbKey(key); setJbBin(binId);
+    localStorage.setItem(JB_LAST_SYNC, Date.now());
     companies = gLoad('companies', []);
-    const d = new Date(data.syncedAt).toLocaleString('fr-FR');
-    syncMsg('sync-recover-msg', 'ok', `${data.companies.length} espace(s) récupéré(s) · Sync du ${d}`);
+    syncMsg('sync-recover-msg','ok',`${data.companies.length} espace(s) récupéré(s) · sync du ${new Date(data.syncedAt).toLocaleString('fr-FR')}`);
     renderList();
-    setTimeout(() => { closeSync(); }, 2200);
-  } catch(e) {
-    syncMsg('sync-recover-msg', 'err', 'Récupération impossible : ' + e.message);
-  }
-  btn.textContent = '↺ Récupérer mes données'; btn.disabled = false;
+    setTimeout(closeSync, 2200);
+  } catch(e) { syncMsg('sync-recover-msg','err', e.message); }
+  btn.textContent='↺ Récupérer mes données'; btn.disabled=false;
 }
 
-function copySyncKey() {
-  const val = document.getElementById('sync-key-val').value;
-  navigator.clipboard.writeText(val).then(() => {
-    const btn = document.getElementById('copy-btn');
-    btn.textContent = '✓ Copié !'; btn.style.color = '#059669';
-    setTimeout(() => { btn.textContent = 'Copier'; btn.style.color = ''; }, 2000);
+function copySyncBin() {
+  const val = document.getElementById('sync-bin-val').value;
+  navigator.clipboard.writeText(val).then(()=>{
+    const btn=document.getElementById('copy-bin-btn');
+    btn.textContent='✓ Copié!'; btn.style.color='#059669';
+    setTimeout(()=>{ btn.textContent='Copier'; btn.style.color=''; }, 2000);
   });
 }
 
@@ -1019,68 +1023,71 @@ else renderList();
 </script>
 <!-- ══ SYNC MODAL ══ -->
 <div id="sync-overlay" class="hidden" style="position:fixed;inset:0;z-index:60;background:rgba(10,20,50,.5);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:18px;width:100%;max-width:460px;box-shadow:0 32px 80px rgba(0,0,0,.22);overflow:hidden;animation:popIn .3s cubic-bezier(.16,1,.3,1);">
+  <div style="background:#fff;border-radius:18px;width:100%;max-width:480px;box-shadow:0 32px 80px rgba(0,0,0,.22);overflow:hidden;animation:popIn .3s cubic-bezier(.16,1,.3,1);">
 
     <!-- Header -->
-    <div style="background:linear-gradient(135deg,#2a5bd7,#1a44c2);padding:22px 26px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="background:linear-gradient(135deg,#1d4ed8,#1a44c2);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;" id="sync-title">☁ Synchronisation</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;">Sauvegardez vos données dans le cloud</div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;">☁ Synchronisation cloud</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;">Propulsé par JSONBin.io</div>
       </div>
-      <button onclick="closeSync()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;width:30px;height:30px;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+      <button onclick="closeSync()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;width:30px;height:30px;color:#fff;font-size:16px;cursor:pointer;">✕</button>
     </div>
 
     <!-- Tabs -->
     <div style="display:flex;border-bottom:1px solid #e2e8f0;">
-      <button class="sync-tab active" id="tab-upload" onclick="switchSyncTab('upload')" style="flex:1;padding:12px;border:none;background:none;font-size:13px;font-weight:700;color:#2a5bd7;border-bottom:2px solid #2a5bd7;cursor:pointer;font-family:'Inter',sans-serif;">☁ Synchroniser</button>
-      <button class="sync-tab" id="tab-recover" onclick="switchSyncTab('recover')" style="flex:1;padding:12px;border:none;background:none;font-size:13px;font-weight:700;color:#94a3b8;border-bottom:2px solid transparent;cursor:pointer;font-family:'Inter',sans-serif;">↺ Récupérer</button>
+      <button id="tab-upload" onclick="switchSyncTab('upload')" style="flex:1;padding:12px;border:none;background:none;font-size:13px;font-weight:700;color:#2a5bd7;border-bottom:2px solid #2a5bd7;cursor:pointer;font-family:'Inter',sans-serif;transition:.15s;">☁ Synchroniser</button>
+      <button id="tab-recover" onclick="switchSyncTab('recover')" style="flex:1;padding:12px;border:none;background:none;font-size:13px;font-weight:700;color:#94a3b8;border-bottom:2px solid transparent;cursor:pointer;font-family:'Inter',sans-serif;transition:.15s;">↺ Récupérer</button>
     </div>
 
     <!-- Body -->
-    <div style="padding:24px 26px;">
+    <div style="padding:22px 24px;">
 
-      <!-- UPLOAD TAB -->
+      <!-- ── ONGLET SYNCHRONISER ── -->
       <div id="sync-upload">
-        <p style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:20px;">
-          Vos données seront sauvegardées en ligne. Une <strong style="color:#0f172a;">clé de synchronisation</strong> vous sera fournie — conservez-la précieusement pour récupérer vos données sur un autre appareil.
-        </p>
+        <!-- Info JSONBin -->
+        <div style="padding:11px 14px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;font-size:12.5px;color:#1e40af;line-height:1.6;margin-bottom:18px;">
+          <strong>Comment obtenir votre clé API ?</strong><br>
+          1. Créez un compte gratuit sur <strong>jsonbin.io</strong><br>
+          2. Allez dans <em>Account → API Keys</em><br>
+          3. Copiez votre <strong>$Master-Key</strong> ci-dessous
+        </div>
 
-        <!-- Clé existante -->
-        <div id="sync-key-display" class="hidden" style="margin-bottom:16px;">
-          <label style="font-size:11px;font-weight:700;color:#374151;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">Votre clé de synchronisation</label>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;color:#374151;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">Clé API JSONBin.io ($Master-Key) *</label>
+          <input id="sync-api-key" type="password" placeholder="$2a$10$xxxxxxxxxxxxxxxxxxxx..." style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-family:monospace;font-size:13px;color:#0f172a;outline:none;">
+        </div>
+
+        <!-- ID du bin (après 1ère sync) -->
+        <div id="sync-bin-display" class="hidden" style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;color:#374151;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">ID du bin (à conserver pour récupérer)</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input id="sync-key-val" readonly style="flex:1;padding:10px 12px;border:1.5px solid #d4e0ff;border-radius:10px;background:#f0f4ff;font-family:monospace;font-size:13px;color:#1a44c2;font-weight:700;outline:none;">
-            <button onclick="copySyncKey()" style="padding:10px 14px;background:#f0f4ff;border:1.5px solid #d4e0ff;border-radius:10px;font-size:13px;font-weight:700;color:#2a5bd7;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif;" id="copy-btn">Copier</button>
+            <input id="sync-bin-val" readonly style="flex:1;padding:10px 12px;border:1.5px solid #d4e0ff;border-radius:10px;background:#f0f4ff;font-family:monospace;font-size:13px;color:#1a44c2;font-weight:700;outline:none;">
+            <button id="copy-bin-btn" onclick="copySyncBin()" style="padding:10px 14px;background:#f0f4ff;border:1.5px solid #d4e0ff;border-radius:10px;font-size:13px;font-weight:700;color:#2a5bd7;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif;">Copier</button>
           </div>
         </div>
 
-        <div id="sync-upload-msg" class="hidden" style="padding:10px 13px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;"></div>
-
-        <button onclick="doSync()" id="sync-upload-btn" style="width:100%;padding:12px;background:#1a44c2;color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(26,68,194,.28);">☁ Lancer la synchronisation</button>
-
-        <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px;line-height:1.5;">
-          🔒 Données stockées via JSONBlob (chiffrement SSL). Partagez la clé uniquement avec vous-même.
-        </p>
+        <div id="sync-upload-msg" class="hidden"></div>
+        <button id="sync-upload-btn" onclick="doSync()" style="width:100%;padding:12px;background:#1a44c2;color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(26,68,194,.28);">☁ Synchroniser maintenant</button>
       </div>
 
-      <!-- RECOVER TAB -->
+      <!-- ── ONGLET RÉCUPÉRER ── -->
       <div id="sync-recover" class="hidden">
-        <p style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:20px;">
-          Saisissez votre <strong style="color:#0f172a;">clé de synchronisation</strong> pour restaurer vos données depuis le cloud. Vos données locales seront fusionnées.
+        <p style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:18px;">
+          Entrez votre <strong>clé API</strong> et l'<strong>ID du bin</strong> pour restaurer vos données sur cet appareil.
         </p>
 
-        <div style="margin-bottom:16px;">
-          <label style="font-size:11px;font-weight:700;color:#374151;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">Clé de synchronisation *</label>
-          <input id="recover-key-input" placeholder="Ex: 11886618018xxxxxxxxxxxxxxx" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-family:monospace;font-size:13px;color:#0f172a;font-weight:600;outline:none;transition:all .18s;" onfocus="this.style.borderColor='#2a5bd7';this.style.boxShadow='0 0 0 3px rgba(42,91,215,.09)'" onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;color:#374151;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">Clé API JSONBin.io ($Master-Key) *</label>
+          <input id="recover-api-key" type="password" placeholder="$2a$10$xxxxxxxxxxxxxxxxxxxx..." style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-family:monospace;font-size:13px;color:#0f172a;outline:none;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;color:#374151;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">ID du bin *</label>
+          <input id="recover-bin-id" placeholder="Ex: 6849abcd1234567890abcdef" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-family:monospace;font-size:13px;color:#0f172a;outline:none;">
         </div>
 
-        <div id="sync-recover-msg" class="hidden" style="padding:10px 13px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;"></div>
-
-        <button onclick="doRecover()" id="sync-recover-btn" style="width:100%;padding:12px;background:#1a44c2;color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(26,68,194,.28);">↺ Récupérer mes données</button>
-
-        <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px;line-height:1.5;">
-          Les espaces récupérés s'ajouteront à vos espaces locaux existants.
-        </p>
+        <div id="sync-recover-msg" class="hidden"></div>
+        <button id="sync-recover-btn" onclick="doRecover()" style="width:100%;padding:12px;background:#1a44c2;color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(26,68,194,.28);">↺ Récupérer mes données</button>
       </div>
 
     </div>
