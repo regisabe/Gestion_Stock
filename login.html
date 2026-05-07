@@ -2,6 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a44c2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MagasinPro">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MagasinPro</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -459,6 +466,8 @@ html, body {
       <div class="co-list" id="co-list"></div>
       <div class="pr-footer">
         <button class="pr-foot-btn" onclick="openOnboarding()">＋ Créer un espace</button>
+        <span class="pr-foot-sep">·</span>
+        <button class="pr-foot-btn" id="pwa-login-install" onclick="triggerInstall()" style="display:none">📲 Installer</button>
         <span class="pr-foot-sep">·</span>
         <button class="pr-foot-btn btn-sync" onclick="openSync('upload')">☁ Synchroniser</button>
         <span class="pr-foot-sep">·</span>
@@ -1094,5 +1103,76 @@ else renderList();
   </div>
 </div>
 
+<!-- PWA : bouton installation -->
+<button id="pwa-install-btn" onclick="triggerInstall()" style="display:none;align-items:center;gap:7px;position:fixed;bottom:24px;right:24px;z-index:99;padding:12px 20px;background:#1a44c2;color:#fff;border:none;border-radius:14px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(26,68,194,.4);animation:slideUp .4s cubic-bezier(.16,1,.3,1);">
+  📲 Installer l'application
+</button>
+<!-- PWA : bannière mise à jour -->
+<div id="pwa-update-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:#0f172a;color:#fff;padding:14px 24px;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;box-shadow:0 -4px 20px rgba(0,0,0,.3);">
+  <span style="font-size:13px;font-weight:600;">🔄 Une nouvelle version de MagasinPro est disponible</span>
+  <div style="display:flex;gap:10px;">
+    <button onclick="document.getElementById('pwa-update-banner').style.display='none'" style="padding:8px 14px;background:rgba(255,255,255,.1);border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer;">Ignorer</button>
+    <button onclick="applyUpdate()" style="padding:8px 16px;background:#1a44c2;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Mettre à jour</button>
+  </div>
+</div>
+<style>
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<script>
+// ── PWA : enregistrement du Service Worker ──────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // Vérifier si une mise à jour est disponible
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            if (typeof showUpdateBanner === 'function') showUpdateBanner();
+          }
+        });
+      });
+    }).catch(e => console.warn('SW:', e));
+  });
+  // Recevoir les messages du SW (ex: retour en ligne)
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type === 'BACK_ONLINE' && typeof toast === 'function')
+      toast('Connexion rétablie — pensez à synchroniser ☁', 'info');
+  });
+}
+
+// ── PWA : bouton d'installation ──────────────────────
+let _deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstall = e;
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'flex';
+  const btn2 = document.getElementById('pwa-login-install');
+  if (btn2) btn2.style.display = 'inline-flex';
+});
+window.addEventListener('appinstalled', () => {
+  _deferredInstall = null;
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'none';
+});
+function triggerInstall() {
+  if (!_deferredInstall) return;
+  _deferredInstall.prompt();
+  _deferredInstall.userChoice.then(() => { _deferredInstall = null; });
+}
+
+// ── PWA : bannière mise à jour ────────────────────────
+function showUpdateBanner() {
+  const b = document.getElementById('pwa-update-banner');
+  if (b) b.style.display = 'flex';
+}
+function applyUpdate() {
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (reg?.waiting) reg.waiting.postMessage('SKIP_WAITING');
+  });
+  window.location.reload();
+}
+</script>
 </body>
 </html>

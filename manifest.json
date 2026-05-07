@@ -1,0 +1,41 @@
+{
+  "name": "MagasinPro — Gestion de stock",
+  "short_name": "MagasinPro",
+  "description": "Gestion de stock, ventes, clients et caisse multi-boutiques. Fonctionne hors-ligne.",
+  "lang": "fr",
+  "start_url": "./login.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0f1e",
+  "theme_color": "#1a44c2",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    { "src": "icon-72.png",  "sizes": "72x72",   "type": "image/png" },
+    { "src": "icon-96.png",  "sizes": "96x96",   "type": "image/png" },
+    { "src": "icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "icon-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "icon-152.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-384.png", "sizes": "384x384", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Point de vente",
+      "short_name": "Caisse",
+      "description": "Accéder directement à la caisse",
+      "url": "./index.html#ventes",
+      "icons": [{ "src": "icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Stock",
+      "short_name": "Stock",
+      "description": "Consulter le stock",
+      "url": "./index.html#stock",
+      "icons": [{ "src": "icon-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "prefer_related_applications": false
+}
