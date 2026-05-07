@@ -1497,6 +1497,13 @@ function logout() {
   window.location.replace('login.html');
 }
 
+// Appelée après chaque mouvement de stock — met à jour badges et vues
+function apresModifStock(msg='', type='success') {
+  save('articles', articles);
+  updateAlerteBadge();
+  if (msg) toast(msg, type);
+}
+
 function alertesCount() {
   return articles.filter(a => getStock(a) <= a.seuilAlerte).length;
 }
@@ -1874,15 +1881,16 @@ function filterCat(catId) {
     const cat = getCat(a.catId);
     const marge = a.prix - a.prixAchat;
     const margePct = a.prixAchat ? Math.round(marge/a.prixAchat*100) : 0;
-    const etat = a.qte === 0 ? ['badge-red','Rupture'] : a.qte <= a.seuilAlerte ? ['badge-yellow','Critique'] : ['badge-green','Normal'];
+    const qSite = getStock(a); // stock du site courant
+    const etat = qSite === 0 ? ['badge-red','Rupture'] : qSite <= a.seuilAlerte ? ['badge-yellow','Critique'] : ['badge-green','Normal'];
     return `<tr>
       <td style="color:var(--text3);font-size:12px">${a.ref}</td>
       <td><span style="margin-right:6px">${cat.icone}</span><strong>${a.nom}</strong></td>
       <td><span class="badge badge-blue">${cat.nom}</span></td>
       <td>
         <div class="stock-gauge">
-          <div class="gauge-bar"><div class="gauge-fill" style="width:${Math.min(100,Math.round(a.qte/(a.seuilAlerte*3||1)*100))}%;background:${a.qte===0?'var(--red)':a.qte<=a.seuilAlerte?'var(--yellow)':'var(--green)'}"></div></div>
-          <span class="gauge-val">${fmtNum(a.qte)} <small style="color:var(--text3)">${a.unite}</small></span>
+          <div class="gauge-bar"><div class="gauge-fill" style="width:${Math.min(100,Math.round(qSite/(a.seuilAlerte*3||1)*100))}%;background:${qSite===0?'var(--red)':qSite<=a.seuilAlerte?'var(--yellow)':'var(--green)'}"></div></div>
+          <span class="gauge-val">${fmtNum(qSite)} <small style="color:var(--text3)">${a.unite}</small></span>
         </div>
       </td>
       <td>${fmt(a.prixAchat)}</td>
@@ -1920,7 +1928,7 @@ function articleFormHtml(a={}) {
     <div class="form-group"><label>Unité de mesure</label><input id="f-unite" value="${a.unite||'pcs'}" placeholder="pcs, kg, m..."></div>
   </div>
   <div class="form-row">
-    <div class="form-group"><label>Stock actuel</label><input id="f-qte" type="number" min="0" value="${a.qte||0}"></div>
+    <div class="form-group"><label>Stock actuel (${getCurrentSite().nom})</label><input id="f-qte" type="number" min="0" value="${getStock(a)}"></div>
     <div class="form-group"><label>Seuil d'alerte</label><input id="f-seuil" type="number" min="0" value="${a.seuilAlerte||5}"></div>
   </div>`;
 }
@@ -1973,7 +1981,7 @@ function deleteArticle(id) {
 }
 function exportArticles() {
   const rows = [['Référence','Nom','Catégorie','Stock','Unité','Prix Achat','Prix Vente']];
-  articles.forEach(a => rows.push([a.ref, a.nom, getCat(a.catId).nom, a.qte, a.unite, a.prixAchat, a.prix]));
+  articles.forEach(a => rows.push([a.ref, a.nom, getCat(a.catId).nom, getStock(a), a.unite, a.prixAchat, a.prix]));
   downloadCSV(rows, 'articles.csv');
 }
 
@@ -2001,7 +2009,7 @@ function pageCategories(c, ta) {
       </div>
       <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Valeur stock</div>
       <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--green)">
-        ${fmt(articles.filter(a=>a.catId===cat.id).reduce((s,a)=>s+a.qte*a.prixAchat,0))}
+        ${fmt(articles.filter(a=>a.catId===cat.id).reduce((s,a)=>s+getStock(a)*a.prixAchat,0))}
       </div>
     </div>`).join('')}
     <div class="rapport-card" style="border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:140px" onclick="modalNouvelleCategorie()">
@@ -2231,7 +2239,7 @@ function modalNouvelleEntree() {
   <div class="form-group"><label>Article *</label>
     <select id="fe-art" onchange="fillEntreePrix()">
       <option value="">— Sélectionner —</option>
-      ${articles.map(a=>`<option value="${a.id}">${getCat(a.catId).icone} ${a.nom} (stock: ${a.qte} ${a.unite})</option>`).join('')}
+      ${articles.map(a=>`<option value="${a.id}">${getCat(a.catId).icone} ${a.nom} (stock: ${getStock(a)} ${a.unite})</option>`).join('')}
     </select>
   </div>
   <div class="form-row">
@@ -2276,8 +2284,8 @@ function saveEntree() {
   entrees.push(e); save('entrees', entrees);
   const idx = articles.findIndex(a=>a.id===artId);
   addStock(articles[idx], qte);
-  save('articles', articles);
-  closeModal(); toast(`+${fmtNum(qte)} unités ajoutées au stock (${getCurrentSite().nom})`); nav('entrees');
+  apresModifStock(`+${fmtNum(qte)} unités ajoutées au stock — ${getCurrentSite().nom}`);
+  closeModal(); nav('entrees');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2337,8 +2345,8 @@ function saveSortie() {
   sorties.push(s); save('sorties', sorties);
   const idx=articles.findIndex(a=>a.id===artId);
   addStock(articles[idx], -qte);
-  save('articles',articles);
-  closeModal(); toast(`-${fmtNum(qte)} unités retirées du stock (${getCurrentSite().nom})`,'warn'); nav('sorties');
+  apresModifStock(`-${fmtNum(qte)} unités retirées du stock — ${getCurrentSite().nom}`, 'warn');
+  closeModal(); nav('sorties');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2378,13 +2386,14 @@ function pageInventaire(c, ta) {
 function updateInv(id, val) {
   invData[id] = +val;
   const a = getArt(id);
-  const diff = (+val) - a.qte;
+  const stockSite = getStock(a); // ✅ stock du site courant
+  const diff = (+val) - stockSite;
   const el = document.getElementById('inv-diff-'+id);
   el.textContent = (diff>0?'+':'') + fmtNum(diff);
   el.className = 'inv-diff ' + (diff>0?'pos':diff<0?'neg':'zero');
 }
 function reinitInv() {
-  invData = {}; articles.forEach(a => invData[a.id]=a.qte);
+  invData = {}; articles.forEach(a => invData[a.id] = getStock(a)); // ✅ site courant
   nav('inventaire');
 }
 function validerInventaire() {
@@ -2401,7 +2410,8 @@ function validerInventaire() {
     else if(diff<0) { sorties.push({id:uid(),artId:id,qte:-diff,motif:'Correction inventaire',obs:'Inventaire physique',date:today(),createdAt:Date.now(),siteId:currentSiteId}); }
   });
   save('articles',articles); save('entrees',entrees); save('sorties',sorties);
-  invData={}; toast(`${changes.length} correction(s) appliquée(s)`); nav('stock');
+  updateAlerteBadge();
+  invData={}; toast(`${changes.length} correction(s) de stock appliquée(s)`); nav('stock');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2553,8 +2563,8 @@ function saveTransfert() {
   const t = { id:uid(), artId, qte, siteFrom:fromId, siteTo:toId, date:document.getElementById('ft-date').value, motif:document.getElementById('ft-motif').value, createdAt:Date.now() };
   transferts.push(t); save('transferts', transferts);
   const siteToName = (sites.find(s=>s.id===toId)||{}).nom || toId;
+  apresModifStock(`🔄 ${fmtNum(qte)} ${art.unite} transféré(s) vers ${siteToName}`);
   closeModal();
-  toast(`🔄 ${fmtNum(qte)} ${art.unite} transféré(s) vers ${siteToName}`);
   nav('transferts');
 }
 
@@ -2692,7 +2702,7 @@ function pageVentes(c, ta) {
       : `<button class="btn btn-primary" onclick="modalOuvrirCaisse()">🔓 Ouvrir la caisse</button>`
     }`;
 
-  const artsDispo = articles.filter(a => a.qte > 0);
+  const artsDispo = articles.filter(a => getStock(a) > 0);
 
   c.innerHTML = `
   ${!sess ? `<div class="alert-box yellow" style="margin-bottom:16px">
@@ -2733,7 +2743,7 @@ function pageVentes(c, ta) {
             <div class="prod-icon">${cat.icone}</div>
             <div class="prod-name">${a.nom}</div>
             <div class="prod-price">${fmt(a.prix)}</div>
-            <div class="prod-stock">Stock: ${fmtNum(a.qte)} ${a.unite}</div>
+<div class="prod-stock">Stock: ${fmtNum(getStock(a))} ${a.unite}</div>
           </div>`;
         }).join('')}
         ${artsDispo.length===0 ? `<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:40px">
@@ -2812,7 +2822,7 @@ function pageVentes(c, ta) {
           const val = e.target.value.trim();
           if (!val) return;
           const a = articles.find(x => x.barcode === val || x.ref?.toLowerCase() === val.toLowerCase() || x.sku?.toLowerCase() === val.toLowerCase());
-          if (a && a.qte > 0) { addToCart(a.id); toast(`${a.nom} ajouté ✅`); }
+          if (a && getStock(a) > 0) { addToCart(a.id); toast(`${a.nom} ajouté ✅`); }
           else toast('Article introuvable ou rupture de stock', 'error');
           e.target.value = '';
         }
@@ -2845,7 +2855,7 @@ function onClientChange() {
 function filterPOS() {
   const q = (document.getElementById('pos-search')?.value||'').toLowerCase();
   const catId = document.getElementById('pos-cat')?.value||'';
-  let arts = articles.filter(a => a.qte > 0);
+  let arts = articles.filter(a => getStock(a) > 0);
   if (q) arts = arts.filter(a => [a.nom,a.ref,a.barcode,a.sku].some(x => x?.toLowerCase().includes(q)));
   if (catId) arts = arts.filter(a => a.catId === catId);
   const el = document.getElementById('pos-products');
@@ -3172,6 +3182,7 @@ function confirmerVente(totalFinal) {
   ventes.push(vente);
   save('ventes', ventes);
   save('articles', articles);
+  updateAlerteBadge();
 
   // Lier à la session de caisse
   const sess = getActiveSession();
@@ -3527,13 +3538,14 @@ function confirmerReception(id) {
       item.qteRecue = (item.qteRecue||0) + qteEffective;
       // Mettre à jour le stock
       const idx = articles.findIndex(a => a.id === item.artId);
-      if (idx >= 0) articles[idx].qte += qteEffective;
+      if (idx >= 0) addStock(articles[idx], qteEffective); // ✅ stock multi-site
       // Créer une entrée stock
       entrees.push({
         id: uid(), artId: item.artId, qte: qteEffective,
         prixUnitaire: item.prixUnitaire, total: qteEffective * item.prixUnitaire,
         fournisseurId: cmd.fournisseurId, date, motif: 'Réception commande',
-        refDoc: cmd.num + (refBL ? ' / ' + refBL : ''), createdAt: Date.now()
+        refDoc: cmd.num + (refBL ? ' / ' + refBL : ''), createdAt: Date.now(),
+        siteId: currentSiteId // ✅ lier au site courant
       });
       totalRecu += qteEffective * item.prixUnitaire;
       rienRecu = false;
@@ -3550,8 +3562,9 @@ function confirmerReception(id) {
   save('commandes', commandes);
   save('articles', articles);
   save('entrees', entrees);
+  updateAlerteBadge();
   closeModal();
-  toast(`Réception enregistrée — ${fmt(totalRecu)} de stock entré — Statut: ${cmd.statut}`);
+  toast(`📦 Réception validée — ${fmt(totalRecu)} de stock entré (${getCurrentSite().nom}) — Statut: ${cmd.statut}`);
   nav('commandes');
 }
 
@@ -3792,7 +3805,7 @@ function pageRapports(c, ta) {
   const caTotal = ventes.reduce((s,v)=>s+v.total,0);
   const caMois = ventes.filter(v=>v.date?.startsWith(today().slice(0,7))).reduce((s,v)=>s+v.total,0);
   const nbVentes = ventes.length;
-  const valStock = articles.reduce((s,a)=>s+a.qte*a.prixAchat,0);
+  const valStock = articles.reduce((s,a)=>s+getStock(a)*a.prixAchat,0);
   const panier = nbVentes ? caTotal/nbVentes : 0;
   
   // CA par catégorie
@@ -3834,13 +3847,13 @@ function pageRapports(c, ta) {
       <div class="rapport-card-title">📦 Valeur du stock</div>
       ${categories.map(cat => {
         const arts = articles.filter(a=>a.catId===cat.id);
-        const val = arts.reduce((s,a)=>s+a.qte*a.prixAchat,0);
+        const val = arts.reduce((s,a)=>s+getStock(a)*a.prixAchat,0);
         if(!val) return '';
         return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <span style="font-size:13px">${cat.icone} ${cat.nom}</span>
           <div style="text-align:right">
             <div style="font-size:13px;font-weight:700">${fmt(val)}</div>
-            <div style="font-size:11px;color:var(--text3)">${arts.length} art. · ${arts.reduce((s,a)=>s+a.qte,0)} unités</div>
+            <div style="font-size:11px;color:var(--text3)">${arts.length} art. · ${arts.reduce((s,a)=>s+getStock(a),0)} unités</div>
           </div>
         </div>`;
       }).join('')}
