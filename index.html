@@ -1428,6 +1428,9 @@ function renderSessionActions(container) {
         <span class="session-chip-name">${esc(currentUser.nom)}</span>
         <span class="session-chip-role">${esc(currentUser.role)}</span>
       </div>
+      <button class="btn btn-ghost" onclick="openSyncModal()" title="Synchroniser" style="display:flex;align-items:center;gap:5px;font-size:13px">
+        ☁ <span class="btn-label">Sync</span>
+      </button>
       <button class="btn btn-ghost" onclick="switchCompany()" title="Changer de boutique">🏪</button>
       <button class="btn btn-ghost" onclick="logout()">Se déconnecter</button>
     </div>
@@ -4540,31 +4543,6 @@ function configPageSecure(c, ta) {
       <div class="data-stat"><div class="data-stat-val">${commandes.length}</div><div class="data-stat-lbl">📑 Commandes</div></div>
     </div>
 
-    <div class="cfg-section">
-      <div class="cfg-section-head">
-        <div class="cfg-section-icon">💾</div>
-        <div>
-          <div class="cfg-section-title">Sauvegarde & Restauration</div>
-          <div class="cfg-section-sub">Exportez ou importez toutes vos données en JSON</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
-        <button class="btn btn-ghost" style="justify-content:center;padding:14px;border-radius:12px;flex-direction:column;gap:6px" onclick="exportAllData()">
-          <span style="font-size:24px">⬇️</span>
-          <span style="font-weight:700">Exporter (JSON)</span>
-          <span style="font-size:11px;color:var(--text3)">Sauvegarde complète locale</span>
-        </button>
-        <button class="btn btn-ghost" style="justify-content:center;padding:14px;border-radius:12px;flex-direction:column;gap:6px" onclick="importAllData()">
-          <span style="font-size:24px">⬆️</span>
-          <span style="font-weight:700">Importer (JSON)</span>
-          <span style="font-size:11px;color:var(--text3)">Restaurer depuis un fichier</span>
-        </button>
-      </div>
-      <div style="padding:14px;background:#fff3cd;border:1px solid #ffc107;border-radius:10px;font-size:12px;color:#856404;line-height:1.6">
-        ⚠️ <strong>L'import remplace les données existantes.</strong> Effectuez toujours une exportation avant d'importer.
-      </div>
-    </div>
-
     <div class="cfg-section" style="border-color:rgba(229,62,62,.3)">
       <div class="cfg-section-head">
         <div class="cfg-section-icon" style="background:rgba(229,62,62,.08);border-color:rgba(229,62,62,.2)">🗑️</div>
@@ -4824,6 +4802,138 @@ if (!currentUser) {
   updateNavigationVisibility();
   toast(`Bienvenue ${currentUser.nom} 👋`);
   nav(getLandingPageForUser());
+}
+</script>
+
+<!-- ══ SYNC MODAL ══ -->
+<div id="sync-modal-overlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(10,20,50,.45);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:18px;width:100%;max-width:480px;box-shadow:0 32px 80px rgba(0,0,0,.2);overflow:hidden;">
+    <div style="background:linear-gradient(135deg,var(--accent),var(--accent2));padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;">☁ Synchronisation — JSONBin.io</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;" id="sm-last-sync">—</div>
+      </div>
+      <button onclick="closeSyncModal()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;width:30px;height:30px;color:#fff;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+
+    <div style="padding:22px 24px;">
+      <div style="padding:11px 14px;border-radius:10px;background:rgba(43,110,240,.06);border:1px solid rgba(43,110,240,.15);font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:18px;">
+        <strong>🔑 Clé API JSONBin.io ($Master-Key)</strong><br>
+        Créez un compte gratuit sur <strong>jsonbin.io</strong> → <em>Account → API Keys</em>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">Clé API *</label>
+        <input id="sm-api-key" type="password" placeholder="$2a$10$xxxxxxxxxxxxxxxxxxxx..."
+          style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--input-bg);font-family:monospace;font-size:13px;color:var(--text);outline:none;">
+      </div>
+
+      <div id="sm-bin-section" style="margin-bottom:14px;display:none;">
+        <label style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px;">ID du bin (conservez-le !)</label>
+        <div style="display:flex;gap:8px;">
+          <input id="sm-bin-val" readonly style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--card2);font-family:monospace;font-size:13px;color:var(--accent);font-weight:700;outline:none;">
+          <button onclick="smCopyBin()" id="sm-copy-btn" style="padding:10px 14px;background:var(--accent-glow);border:1.5px solid rgba(43,110,240,.2);border-radius:10px;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer;">Copier</button>
+        </div>
+      </div>
+
+      <div id="sm-msg" style="display:none;padding:10px 13px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:14px;"></div>
+
+      <div style="display:flex;gap:10px;">
+        <button onclick="doAppSync()" id="sm-btn" style="flex:1;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(43,110,240,.28);">☁ Synchroniser</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SYNC JSONBIN.IO (app) ────────────────────────────────────────────────────
+const APP_JB_URL    = 'https://api.jsonbin.io/v3/b';
+const APP_JB_KEY    = 'mp_jsonbinKey';
+const APP_JB_BIN    = 'mp_syncBinId';
+const APP_JB_LAST   = 'mp_lastSync';
+
+function openSyncModal() {
+  const overlay = document.getElementById('sync-modal-overlay');
+  overlay.style.display = 'flex';
+  const key = localStorage.getItem(APP_JB_KEY) || '';
+  const bin = localStorage.getItem(APP_JB_BIN) || '';
+  const inp = document.getElementById('sm-api-key');
+  if (inp && key) inp.value = key;
+  const binSec = document.getElementById('sm-bin-section');
+  if (bin) { document.getElementById('sm-bin-val').value = bin; binSec.style.display = 'block'; }
+  else binSec.style.display = 'none';
+  const last = localStorage.getItem(APP_JB_LAST);
+  const lastEl = document.getElementById('sm-last-sync');
+  if (lastEl) lastEl.textContent = last ? 'Dernière sync : ' + new Date(+last).toLocaleString('fr-FR') : 'Jamais synchronisé';
+  const msg = document.getElementById('sm-msg');
+  if (msg) msg.style.display = 'none';
+}
+function closeSyncModal() { document.getElementById('sync-modal-overlay').style.display = 'none'; }
+
+function smMsg(type, txt) {
+  const el = document.getElementById('sm-msg');
+  const st = { ok:'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7',
+               err:'background:#fef2f2;color:#991b1b;border:1px solid #fca5a5',
+               info:'background:#eff6ff;color:#1e40af;border:1px solid #93c5fd' };
+  el.style.cssText = 'padding:10px 13px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;' + (st[type]||st.info);
+  el.innerHTML = (type==='ok'?'✅':type==='err'?'⚠️':'⏳') + ' ' + txt;
+}
+
+function gatherAppSyncData() {
+  const _cid = localStorage.getItem('mp_currentCompanyId') || '';
+  const companies = (()=>{ try{return JSON.parse(localStorage.getItem('mp_companies'))||[];}catch{return[];} })();
+  const companyData = {};
+  const KEYS = ['config','sites','users','categories','articles','fournisseurs','clients','entrees','sorties','ventes','commandes','transferts'];
+  companies.forEach(c => {
+    companyData[c.id] = {};
+    KEYS.forEach(k => { try { companyData[c.id][k] = JSON.parse(localStorage.getItem('mp_'+c.id+'_'+k)); } catch{} });
+  });
+  return { version:'1.0', appName:'MagasinPro', syncedAt:Date.now(), companies, companyData };
+}
+
+async function doAppSync() {
+  const apiKey = document.getElementById('sm-api-key').value.trim();
+  if (!apiKey) { smMsg('err','Clé API requise.'); return; }
+  const btn = document.getElementById('sm-btn');
+  btn.textContent='⏳ Sync…'; btn.disabled=true;
+  smMsg('info','Envoi en cours…');
+  try {
+    const payload = gatherAppSyncData();
+    let binId = localStorage.getItem(APP_JB_BIN) || '';
+    if (binId) {
+      const r = await fetch(APP_JB_URL+'/'+binId, {
+        method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':apiKey},
+        body:JSON.stringify(payload)
+      });
+      if (r.status === 404) binId = '';
+      else if (!r.ok) throw new Error('JSONBin '+r.status);
+    }
+    if (!binId) {
+      const r = await fetch(APP_JB_URL, {
+        method:'POST', headers:{'Content-Type':'application/json','X-Master-Key':apiKey,'X-Bin-Name':'MagasinPro','X-Bin-Private':'true'},
+        body:JSON.stringify(payload)
+      });
+      if (!r.ok) throw new Error('JSONBin '+r.status+' — Clé API incorrecte ?');
+      binId = (await r.json()).metadata.id;
+    }
+    localStorage.setItem(APP_JB_KEY, apiKey);
+    localStorage.setItem(APP_JB_BIN, binId);
+    localStorage.setItem(APP_JB_LAST, Date.now());
+    document.getElementById('sm-bin-val').value = binId;
+    document.getElementById('sm-bin-section').style.display = 'block';
+    document.getElementById('sm-last-sync').textContent = 'Dernière sync : ' + new Date(payload.syncedAt).toLocaleString('fr-FR');
+    smMsg('ok',payload.companies.length+' espace(s) synchronisé(s) · '+new Date(payload.syncedAt).toLocaleString('fr-FR'));
+  } catch(e) { smMsg('err', e.message); }
+  btn.textContent='☁ Synchroniser'; btn.disabled=false;
+}
+
+function smCopyBin() {
+  const v = document.getElementById('sm-bin-val').value;
+  navigator.clipboard.writeText(v).then(()=>{
+    const b=document.getElementById('sm-copy-btn');
+    b.textContent='✓ Copié!'; b.style.color='var(--green)';
+    setTimeout(()=>{b.textContent='Copier';b.style.color='';},2000);
+  });
 }
 </script>
 </body>
