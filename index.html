@@ -822,6 +822,7 @@
   }
   .bnav-item .bnav-icon { font-size: 20px; line-height: 1; }
   .bnav-item.active { color: var(--accent); }
+  #bnav-more .bnav-icon { font-size: 24px; font-weight: 900; letter-spacing: -2px; }
   .bnav-item .bnav-badge {
     position: absolute; top: 2px; right: 8px;
     background: var(--red); color: white;
@@ -856,102 +857,300 @@
   }
   .pos-tab-btn:not(.active) .pos-cart-badge { background: var(--accent); color: white; }
 
-  /* ── RESPONSIVE BREAKPOINTS ── */
-  @media (max-width: 768px) {
+  /* ══════════════════════════════════════════════════════
+     RESPONSIVE MOBILE — Optimisé Android & iOS
+  ══════════════════════════════════════════════════════ */
 
+  /* ── Empêcher le zoom iOS sur focus input ── */
+  @media (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important; /* iOS ne zoome pas si >= 16px */
+    }
+  }
+
+  /* ── Tailles de cibles tactiles minimales (Apple HIG = 44px) ── */
+  @media (max-width: 768px) {
+    .btn, button:not(.pw-btn):not(.pw-eye):not(.icon-opt):not(.color-opt) {
+      min-height: 44px;
+      padding: 10px 16px;
+      font-size: 14px;
+    }
+    .btn-sm { min-height: 36px; padding: 7px 12px; font-size: 13px; }
+    .bnav-item { min-height: 52px; padding: 8px 4px; }
+    select, input[type="text"], input[type="password"],
+    input[type="number"], input[type="email"], input[type="date"] {
+      min-height: 46px;
+      padding: 10px 14px !important;
+      border-radius: 10px;
+    }
+    textarea { padding: 12px 14px !important; }
+  }
+
+  @media (max-width: 768px) {
     body { flex-direction: column; }
 
-    .login-shell { max-width: 100%; }
-    .login-card { padding: 24px 20px; border-radius: 20px; }
-    .login-site-grid { grid-template-columns: 1fr 1fr; }
-
+    /* ── SIDEBAR ── */
     #sidebar {
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      width: 260px;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 78vw; max-width: 300px;
       transform: translateX(-100%);
-      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
       z-index: 300;
-      box-shadow: 4px 0 24px rgba(0,0,0,0.08);
+      box-shadow: 6px 0 32px rgba(0,0,0,.14);
+      overflow-y: auto;
     }
     #sidebar.open { transform: translateX(0); }
 
-    #hamburger { display: flex; }
-    #mobile-overlay { }
-    #mobile-bottomnav { display: flex; }
+    /* ── HAMBURGER ── */
+    #hamburger {
+      display: flex;
+      width: 44px; height: 44px;
+      align-items: center; justify-content: center;
+    }
 
-    #main { height: 100vh; padding-bottom: 64px; }
+    /* ── BOTTOM NAV ── */
+    #mobile-bottomnav {
+      display: flex;
+      padding: 4px 0 max(env(safe-area-inset-bottom), 8px);
+      box-shadow: 0 -1px 0 rgba(0,0,0,.08), 0 -4px 20px rgba(0,0,0,.06);
+    }
+    .bnav-item { font-size: 10px; font-weight: 700; gap: 3px; }
+    .bnav-item .bnav-icon { font-size: 22px; }
+    .bnav-item.active {
+      color: var(--accent);
+      background: var(--accent-glow);
+      border-radius: 12px;
+      margin: 2px 4px;
+    }
 
+    /* ── MAIN / TOPBAR ── */
+    #main {
+      height: 100dvh; /* dvh = dynamic viewport height — tient compte barre nav iOS */
+      padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    }
     .topbar {
-      padding: 10px 14px;
+      padding: 10px 12px;
       position: sticky; top: 0; z-index: 100;
+      min-height: 56px;
     }
     .topbar-left { gap: 8px; }
     .page-title { font-size: 16px; }
     .page-subtitle { display: none; }
-    .topbar-right { gap: 6px; }
+    .topbar-right { gap: 4px; }
     .topbar-right .btn span.btn-label { display: none; }
+    .session-chip { display: none; } /* cacher le chip sur mobile */
+    .session-actions { gap: 4px; }
+    #net-indicator { display: none; }
 
-    .content { padding: 12px; }
+    /* ── CONTENU ── */
+    .content { padding: 12px 12px 20px; }
 
+    /* ── STATS GRID ── */
     .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px; }
-    .stat-card { padding: 14px; }
-    .stat-value { font-size: 18px; }
-    .stat-icon { font-size: 22px; margin-bottom: 8px; }
+    .stat-card { padding: 14px 12px; border-radius: 14px; }
+    .stat-value { font-size: 20px; }
+    .stat-icon { font-size: 24px; margin-bottom: 6px; }
+    .stat-label { font-size: 11px; }
 
+    /* ── GRILLES ── */
     .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px; }
-
     .form-row, .form-row.three { grid-template-columns: 1fr !important; }
 
-    .table-container { overflow: hidden; }
-    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { min-width: 520px; }
-    th, td { padding: 10px 12px; font-size: 12.5px; white-space: nowrap; }
+    /* ─────────────────────────────────────────────────
+       TABLES → CARTES MOBILES
+       Les colonnes cachent le thead et chaque ligne
+       devient une carte autonome avec libellés.
+    ───────────────────────────────────────────────── */
+    .table-scroll {
+      overflow-x: hidden !important;
+    }
+    .table-scroll table {
+      min-width: 0 !important;
+      width: 100%;
+    }
+    .table-scroll table thead {
+      display: none; /* masqué — libellés injectés via JS data-label */
+    }
+    .table-scroll table tbody tr {
+      display: block;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      padding: 4px 0;
+      box-shadow: var(--shadow-sm);
+    }
+    .table-scroll table tbody td {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      white-space: normal !important;
+      min-width: 0;
+      font-size: 13px;
+      gap: 10px;
+    }
+    .table-scroll table tbody td:last-child { border-bottom: none; }
+    .table-scroll table tbody td::before {
+      content: attr(data-label);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      padding-top: 1px;
+      min-width: 90px;
+    }
+    /* Cacher les colonnes d'action repetitives quand vide */
+    .table-scroll table tbody td:empty { display: none; }
+    /* Boutons d'actions dans les cellules */
+    .table-scroll table tbody td .btn-sm {
+      min-height: 36px;
+      padding: 6px 12px;
+    }
 
+    /* ── TABLE HEADER (titre + bouton) ── */
+    .table-header {
+      flex-wrap: wrap; gap: 10px; padding: 14px 12px;
+    }
+    .table-title { font-size: 14px; }
+
+    /* ── FORMULAIRES ── */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+
+    /* ── MODAUX (slide-up depuis le bas) ── */
+    .modal-overlay {
+      align-items: flex-end;
+      padding: 0;
+    }
+    .modal, .modal.modal-lg {
+      max-width: 100%;
+      width: 100%;
+      margin: 0;
+      border-radius: 20px 20px 0 0;
+      max-height: 92dvh;
+      animation: modalSlideUp .3s cubic-bezier(.16,1,.3,1);
+    }
+    @keyframes modalSlideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .modal-header { padding: 16px 20px 14px; }
+    .modal-body   { padding: 14px 20px 20px; }
+    /* Drag handle visuel */
+    .modal-header::before {
+      content: '';
+      display: block;
+      width: 40px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: -8px auto 12px;
+    }
+
+    /* ── RECHERCHE ── */
+    .search-bar { flex: 1; max-width: none; }
+    .search-bar input { font-size: 14px !important; }
+
+    /* ── FILTRE ── */
+    .filter-bar { flex-wrap: wrap; gap: 8px; }
+    .filter-select { font-size: 13px; padding: 8px 10px; min-height: 40px; }
+
+    /* ── ONGLETS ── */
+    .tabs {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap; gap: 0;
+      scrollbar-width: none; /* Firefox */
+      padding-bottom: 2px;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { white-space: nowrap; padding: 10px 16px; font-size: 13px; }
+
+    /* ── CONFIG SOUS-NAV ── */
+    .cfg-subnav {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap; gap: 4px;
+      padding: 6px;
+      scrollbar-width: none;
+    }
+    .cfg-subnav::-webkit-scrollbar { display: none; }
+    .cfg-subbtn { white-space: nowrap; font-size: 12px; padding: 8px 14px; }
+
+    /* ── MODULES GRID (Dashboard) ── */
+    .modules-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 10px;
+    }
+    .mod-card { padding: 16px 12px 14px; border-radius: 14px; }
+    .mod-icon-wrap { width: 42px; height: 42px; font-size: 20px; }
+    .mod-label { font-size: 13px; }
+    .mod-hint { display: none; } /* plus de place sur mobile */
+
+    /* ── ALERTES ── */
+    .alert-box { padding: 12px 14px; flex-direction: column; gap: 8px; }
+
+    /* ── RAPPORTS ── */
+    .rapport-card { padding: 14px; min-height: unset; }
+
+    /* ── POS / CAISSE ── */
     .pos-grid { grid-template-columns: 1fr !important; height: auto; gap: 0; }
-    .pos-tab-bar { display: flex; }
-    .pos-left, .pos-right { border-radius: var(--radius); }
-    .pos-products { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important; }
-    .pos-product-card { padding: 10px 8px; }
-    .pos-product-card .prod-icon { font-size: 22px; }
-    .pos-product-card .prod-name { font-size: 11px; }
-    .pos-right { position: fixed; inset: 60px 0 64px 0; z-index: 50; border-radius: 0; display: none; }
+    .pos-tab-bar { display: flex; margin-bottom: 10px; }
+    .pos-products {
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 8px;
+    }
+    .pos-product-card { padding: 10px 6px; border-radius: 12px; }
+    .pos-product-card .prod-icon { font-size: 24px; }
+    .pos-product-card .prod-name { font-size: 11px; line-height: 1.3; }
+    .pos-product-card .prod-price { font-size: 12px; font-weight: 800; }
+    .pos-right {
+      position: fixed; inset: 56px 0 calc(64px + env(safe-area-inset-bottom,0px)) 0;
+      z-index: 50; border-radius: 0; display: none; flex-direction: column;
+    }
     .pos-right.mobile-active { display: flex; }
     .pos-left.mobile-hidden { display: none; }
 
-    .grid-3 > .rapport-card { min-height: unset; }
+    .cart-item { padding: 10px 12px; }
+    .cart-foot { padding: 12px 14px; }
+    .cart-grand { font-size: 20px; }
 
-    .modal, .modal.modal-lg { max-width: 100%; margin: 0; border-radius: var(--radius) var(--radius) 0 0; max-height: 90vh; }
-    .modal-overlay { align-items: flex-end; padding: 0; }
+    /* ── CAISSE SESSION ── */
+    .sessions-grid { grid-template-columns: 1fr !important; }
 
-    .table-header { flex-wrap: wrap; gap: 8px; padding: 12px; }
-    .table-title { font-size: 14px; }
+    /* ── SECTION HEAD ── */
+    .section-head { flex-direction: column; align-items: flex-start; gap: 8px; }
 
-    .search-bar { max-width: 160px; }
-    .search-bar input { font-size: 12px; }
+    /* ── BADGE GROUPE ── */
+    .badge-group { flex-wrap: wrap; gap: 4px; }
 
-    .btn { padding: 7px 12px; font-size: 12px; }
+    /* ── RÔLE CARDS ── */
+    .role-grid { grid-template-columns: 1fr !important; }
 
-    .section-head { flex-direction: column; align-items: flex-start; }
-
-    .alert-box { padding: 10px 12px; }
-
-    .rapport-card { padding: 14px; }
-
-    .filter-bar { gap: 6px; }
-    .filter-select { font-size: 12px; padding: 6px 10px; }
-
-    .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
-    .tab { white-space: nowrap; padding: 8px 14px; font-size: 12px; }
-
-    .cart-foot { padding: 12px; }
-    .cart-grand { font-size: 18px; }
+    /* ── DATA STATS ── */
+    .data-stats { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .data-stat-val { font-size: 18px; }
+    .data-stat-lbl { font-size: 10px; }
   }
 
+  /* ── Petit mobile (< 400px) ── */
   @media (max-width: 400px) {
     .stats-grid { grid-template-columns: 1fr !important; }
-    .stat-value { font-size: 16px; }
+    .stat-value { font-size: 18px; }
     .pos-products { grid-template-columns: repeat(2, 1fr) !important; }
+    .modules-grid { grid-template-columns: 1fr 1fr !important; }
+    .data-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── iPhone avec notch / Dynamic Island ── */
+  @supports (padding-top: env(safe-area-inset-top)) {
+    .topbar {
+      padding-top: max(10px, env(safe-area-inset-top));
+    }
+    #mobile-bottomnav {
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
   }
 </style>
 </head>
@@ -1062,7 +1261,7 @@
 <!-- MOBILE BOTTOM NAV -->
 <div id="mobile-bottomnav">
   <div class="bnav-item active" onclick="nav('dashboard')" data-page="dashboard" style="position:relative">
-    <span class="bnav-icon">📊</span><span>Accueil</span>
+    <span class="bnav-icon">🏠</span><span>Accueil</span>
   </div>
   <div class="bnav-item" onclick="nav('stock')" data-page="stock" style="position:relative">
     <span class="bnav-icon">🗄️</span><span>Stock</span>
@@ -1524,6 +1723,35 @@ function toggleSidebar() {
   sidebar.classList.toggle('open', !isOpen);
   overlay.classList.toggle('active', !isOpen);
   ham.classList.toggle('open', !isOpen);
+}
+
+
+// ── MOBILE : Conversion table → cartes ──────────────────────────────────────
+function mobilizeTable() {
+  if (window.innerWidth > 768) return;
+  document.querySelectorAll('.table-scroll table').forEach(table => {
+    const headers = [...table.querySelectorAll('thead th')]
+      .map(th => th.textContent.trim().replace(/[↑↓]/g, '').trim());
+    table.querySelectorAll('tbody tr').forEach(row => {
+      [...row.querySelectorAll('td')].forEach((td, i) => {
+        const label = headers[i] || '';
+        if (label) td.setAttribute('data-label', label);
+      });
+    });
+  });
+}
+
+// ── MOBILE : Fermer sidebar au changement de page ────────────────────────────
+function closeSidebar() {
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('mobile-overlay')?.classList.remove('active');
+  const ham = document.getElementById('hamburger');
+  if (ham) ham.classList.remove('open');
+}
+
+// ── MOBILE : Vibration courte sur action tactile ────────────────────────────
+function vibrate(ms=30) {
+  if (navigator.vibrate) navigator.vibrate(ms);
 }
 
 function closeSidebar() {
@@ -4812,6 +5040,157 @@ function downloadCSV(rows, filename) {
 // ═══════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════
+//  AUTO-SYNC — JSONBin toutes les 10 minutes
+// ══════════════════════════════════════════════════════
+const AUTO_SYNC_INTERVAL = 10 * 60 * 1000; // 10 min
+let autoSyncTimer = null;
+
+function startAutoSync() {
+  stopAutoSync();
+  const apiKey = localStorage.getItem('mp_jsonbinKey') || '';
+  const binId  = localStorage.getItem('mp_syncBinId')  || '';
+  if (!apiKey || !binId) return; // pas configuré → pas de sync auto
+  autoSyncTimer = setInterval(runAutoSync, AUTO_SYNC_INTERVAL);
+  console.log('[AutoSync] Démarré — toutes les 10 min');
+}
+
+function stopAutoSync() {
+  if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+}
+
+async function runAutoSync() {
+  if (!navigator.onLine) return; // hors-ligne → skip
+  const apiKey = localStorage.getItem('mp_jsonbinKey') || '';
+  const binId  = localStorage.getItem('mp_syncBinId')  || '';
+  if (!apiKey || !binId) { stopAutoSync(); return; }
+  try {
+    // Construire le payload
+    const companies = (()=>{ try{return JSON.parse(localStorage.getItem('mp_companies'))||[];}catch{return[];} })();
+    const KEYS = ['config','sites','users','categories','articles','fournisseurs','clients','entrees','sorties','ventes','commandes','transferts'];
+    const companyData = {};
+    companies.forEach(c => {
+      companyData[c.id] = {};
+      KEYS.forEach(k => {
+        try { companyData[c.id][k] = JSON.parse(localStorage.getItem('mp_'+c.id+'_'+k)); } catch {}
+      });
+    });
+    const payload = { version:'1.0', appName:'MagasinPro', syncedAt:Date.now(), companies, companyData };
+
+    // Mise à jour du bin existant
+    const r = await fetch('https://api.jsonbin.io/v3/b/' + binId, {
+      method: 'PUT',
+      headers: { 'Content-Type':'application/json', 'X-Master-Key': apiKey },
+      body: JSON.stringify(payload)
+    });
+    if (r.ok) {
+      localStorage.setItem('mp_lastSync', Date.now());
+      console.log('[AutoSync] ✅ Sync réussie —', new Date().toLocaleTimeString('fr-FR'));
+      // Petit indicateur visuel discret
+      showSyncPulse();
+    } else {
+      console.warn('[AutoSync] ⚠️ Erreur', r.status);
+    }
+  } catch(e) {
+    console.warn('[AutoSync] Hors-ligne ou erreur:', e.message);
+  }
+}
+
+// Petit flash discret sur le bouton sync du header
+function showSyncPulse() {
+  const btn = document.querySelector('[onclick*="openSyncModal"]');
+  if (!btn) return;
+  btn.style.transition = 'background .3s';
+  btn.style.background = 'rgba(16,185,129,.15)';
+  setTimeout(() => { btn.style.background = ''; }, 1200);
+}
+
+// ══════════════════════════════════════════════════════
+//  AUTO-DÉCONNEXION — 15 min d'inactivité
+// ══════════════════════════════════════════════════════
+const INACTIVITY_LIMIT  = 15 * 60 * 1000; // 15 min
+const INACTIVITY_WARN   = 13 * 60 * 1000; // avertir à 13 min
+let lastActivity        = Date.now();
+let inactivityTimer     = null;
+let warnShown           = false;
+
+function resetActivity() {
+  lastActivity = Date.now();
+  if (warnShown) {
+    warnShown = false;
+    closeInactivityWarning();
+  }
+}
+
+// Écouter toute interaction utilisateur
+['click','mousemove','keydown','touchstart','scroll'].forEach(evt =>
+  document.addEventListener(evt, resetActivity, { passive: true })
+);
+
+function startInactivityWatch() {
+  if (inactivityTimer) clearInterval(inactivityTimer);
+  inactivityTimer = setInterval(() => {
+    const idle = Date.now() - lastActivity;
+    if (idle >= INACTIVITY_LIMIT) {
+      clearInterval(inactivityTimer);
+      autoLogout();
+    } else if (idle >= INACTIVITY_WARN && !warnShown) {
+      warnShown = true;
+      showInactivityWarning();
+    }
+  }, 30 * 1000); // vérifier toutes les 30 secondes
+}
+
+function showInactivityWarning() {
+  // Bannière non-intrusive en bas
+  if (document.getElementById('inactivity-banner')) return;
+  const sec = Math.round((INACTIVITY_LIMIT - INACTIVITY_WARN) / 1000 / 60);
+  const banner = document.createElement('div');
+  banner.id = 'inactivity-banner';
+  banner.style.cssText = `
+    position:fixed;bottom:calc(64px + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:500;
+    background:#1e293b;color:#fff;padding:14px 20px;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    box-shadow:0 -4px 20px rgba(0,0,0,.25);animation:slideUp .3s ease;
+    font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  `;
+  let countdown = Math.round((INACTIVITY_LIMIT - (Date.now()-lastActivity)) / 1000);
+  banner.innerHTML = `
+    <span>⏱ Session inactive — déconnexion dans <strong id="inact-count">${countdown}s</strong></span>
+    <div style="display:flex;gap:8px;">
+      <button onclick="resetActivity()" style="padding:8px 16px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:13px;">Je suis là</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+
+  // Décompte live
+  const countInterval = setInterval(() => {
+    const remaining = Math.max(0, Math.round((INACTIVITY_LIMIT - (Date.now()-lastActivity)) / 1000));
+    const el = document.getElementById('inact-count');
+    if (el) el.textContent = remaining + 's';
+    if (remaining <= 0 || !document.getElementById('inactivity-banner')) clearInterval(countInterval);
+  }, 1000);
+}
+
+function closeInactivityWarning() {
+  const b = document.getElementById('inactivity-banner');
+  if (b) b.remove();
+}
+
+function autoLogout() {
+  closeInactivityWarning();
+  stopAutoSync();
+  // Sauvegarder avant de partir
+  try { save('articles', articles); save('config', config); } catch {}
+  // Effacer session
+  save('sessionUserId', '');
+  gSave('currentCompanyId', '');
+  // Rediriger
+  window.location.replace('login.html');
+}
+
+
 // ─── INIT ────────────────────────────────────────────────────────────────────
 users = normalizeUsers(users);
 save('users', users);
@@ -4823,6 +5202,8 @@ if (!currentUser) {
   updateNavigationVisibility();
   toast(`Bienvenue ${currentUser.nom} 👋`);
   nav(getLandingPageForUser());
+  startAutoSync();       // sync auto JSONBin
+  startInactivityWatch(); // déconnexion auto
 }
 </script>
 
@@ -4957,6 +5338,35 @@ function smCopyBin() {
   });
 }
 
+
+// ── MOBILE : Menu "Plus" ─────────────────────────────────────────────────────
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-more-menu');
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  if (isOpen) {
+    menu.style.display = 'none';
+  } else {
+    buildMobileMoreMenu();
+    menu.style.display = 'block';
+    menu.style.animation = 'none';
+  }
+}
+function buildMobileMoreMenu() {
+  const grid = document.getElementById('mobile-more-grid');
+  if (!grid) return;
+  const allModules = MODULE_OPTIONS.filter(m => m.id !== 'dashboard' && canAccessPage(m.id));
+  grid.innerHTML = allModules.map(m => `
+    <button onclick="nav('${m.id}');toggleMobileMenu()" style="
+      display:flex;flex-direction:column;align-items:center;gap:6px;
+      padding:12px 6px;border:1.5px solid var(--border);border-radius:12px;
+      background:var(--card2);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;
+    ">
+      <span style="font-size:22px">${m.icon}</span>
+      <span style="font-size:10px;font-weight:700;color:var(--text2);text-align:center;line-height:1.3">${m.label}</span>
+    </button>`).join('');
+}
+
 // ── RÉSEAU : indicateur online/offline ───────────────
 function updateNetStatus() {
   const dot = document.getElementById('net-indicator');
@@ -4966,9 +5376,33 @@ function updateNetStatus() {
   dot.style.boxShadow    = online ? '0 0 6px #10b981' : '0 0 6px #ef4444';
   dot.title              = online ? 'En ligne' : 'Hors ligne';
 }
-window.addEventListener('online',  () => { updateNetStatus(); toast('Connexion rétablie ✅ — pensez à synchroniser ☁'); });
-window.addEventListener('offline', () => { updateNetStatus(); toast('Mode hors-ligne — données locales uniquement', 'warn'); });
+window.addEventListener('online',  () => { updateNetStatus();
+
+// Observer pour mobiliser les tables après chaque rendu
+if (window.innerWidth <= 768) {
+  new MutationObserver(() => mobilizeTable())
+    .observe(document.getElementById('content') || document.body,
+             { childList: true, subtree: false });
+}
+ toast('Connexion rétablie ✅ — pensez à synchroniser ☁'); });
+window.addEventListener('offline', () => { updateNetStatus();
+
+// Observer pour mobiliser les tables après chaque rendu
+if (window.innerWidth <= 768) {
+  new MutationObserver(() => mobilizeTable())
+    .observe(document.getElementById('content') || document.body,
+             { childList: true, subtree: false });
+}
+ toast('Mode hors-ligne — données locales uniquement', 'warn'); });
 updateNetStatus();
+
+// Observer pour mobiliser les tables après chaque rendu
+if (window.innerWidth <= 768) {
+  new MutationObserver(() => mobilizeTable())
+    .observe(document.getElementById('content') || document.body,
+             { childList: true, subtree: false });
+}
+
 
 </script>
 <!-- PWA : bouton installation -->
