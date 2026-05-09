@@ -764,6 +764,78 @@
   ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
 
   /* Print */
+
+  /* ── MODE SOMBRE ── */
+  [data-theme="dark"] {
+    --bg:           #0f172a;
+    --sidebar:      #1e293b;
+    --sidebar-border:#334155;
+    --card:         #1e293b;
+    --card2:        #162032;
+    --border:       #334155;
+    --text:         #f1f5f9;
+    --text2:        #cbd5e1;
+    --text3:        #64748b;
+    --input-bg:     #0f172a;
+    --accent-glow:  rgba(43,110,240,.18);
+    --green-bg:     rgba(16,168,97,.12);
+    --red-bg:       rgba(229,62,62,.12);
+    --yellow-bg:    rgba(180,83,9,.12);
+    --blue-bg:      rgba(59,130,246,.12);
+    --shadow-sm:    0 2px 8px rgba(0,0,0,.45);
+    --shadow:       0 8px 32px rgba(0,0,0,.55);
+  }
+  [data-theme="dark"] .topbar,
+  [data-theme="dark"] #mobile-bottomnav { background: var(--card); }
+  [data-theme="dark"] input,
+  [data-theme="dark"] select,
+  [data-theme="dark"] textarea { background: var(--card2) !important; color: var(--text) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .modal { background: var(--card); }
+  [data-theme="dark"] .badge { opacity: .9; }
+  [data-theme="dark"] .co-card,
+  [data-theme="dark"] .mod-card,
+  [data-theme="dark"] .rapport-card { background: var(--card); }
+  [data-theme="dark"] table thead tr { background: var(--card2) !important; }
+  [data-theme="dark"] .table-scroll table tbody tr { background: var(--card) !important; }
+  [data-theme="dark"] .stat-card { background: var(--card) !important; }
+
+  /* ── PRINT — Impression & PDF ── */
+  #print-zone { display: none; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body > * { display: none !important; }
+    #print-zone { display: block !important; }
+    @page { margin: 8mm; }
+
+    /* Ticket de caisse thermique */
+    .ticket {
+      font-family: 'Courier New', monospace;
+      width: 76mm; margin: 0 auto;
+      font-size: 11px; line-height: 1.5;
+    }
+    .ticket .t-center { text-align: center; }
+    .ticket .t-store { font-size: 16px; font-weight: 900; text-transform: uppercase; }
+    .ticket .t-sub { font-size: 10px; color: #555; }
+    .ticket .t-sep { border-top: 1px dashed #000; margin: 4px 0; }
+    .ticket .t-item { display: flex; justify-content: space-between; }
+    .ticket .t-item-det { padding-left: 4mm; color: #555; font-size: 10px; }
+    .ticket .t-total-row { display: flex; justify-content: space-between; }
+    .ticket .t-big { font-size: 14px; font-weight: 900; margin: 2px 0; }
+    .ticket .t-logo { max-width: 40mm; max-height: 20mm; object-fit: contain; margin: 0 auto; display: block; }
+
+    /* Facture A4 */
+    .facture { font-family: Arial, sans-serif; font-size: 12px; }
+    .facture table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .facture table th, .facture table td { border: 1px solid #ddd; padding: 6px 8px; }
+    .facture table thead th { background: #f0f4ff; font-weight: 700; }
+    .facture .f-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    .facture .f-total-box { text-align: right; margin-top: 16px; font-size: 14px; font-weight: 700; }
+
+    /* Bon de commande */
+    .bon-cmd { font-family: Arial, sans-serif; font-size: 12px; }
+    .no-print { display: none !important; }
+  }
+
   @media print {
     #sidebar, .topbar, .btn, .modal-overlay, #mobile-overlay, #mobile-bottomnav { display: none !important; }
     body { background: white; color: black; }
@@ -856,6 +928,81 @@
     min-width: 18px; text-align: center;
   }
   .pos-tab-btn:not(.active) .pos-cart-badge { background: var(--accent); color: white; }
+
+
+
+  /* FAB Panier mobile */
+  #fab-cart {
+    display: none;
+    position: fixed;
+    bottom: calc(72px + env(safe-area-inset-bottom,0px));
+    right: 16px;
+    z-index: 80;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(43,110,240,.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+    transition: all .2s;
+  }
+  #fab-cart.hidden { display: none !important; }
+  #fab-cart:active { transform: scale(.96); }
+
+  @media (min-width: 769px) { #fab-cart { display: none !important; } }
+
+  /* ══════════════════════════════════════════════════════
+     TABLETTE (769px – 1200px)
+  ══════════════════════════════════════════════════════ */
+  @media (min-width: 769px) and (max-width: 1200px) {
+
+    /* Sidebar réduite */
+    #sidebar { width: 220px; min-width: 220px; }
+    .nav-group-label { font-size: 9px; }
+    .nav-item { padding: 8px 12px; font-size: 13px; }
+    .brand-name { font-size: 13px; }
+    .brand-icon { width: 36px; height: 36px; font-size: 20px; }
+
+    /* Contenu plus compact */
+    .content { padding: 16px 18px; }
+    .topbar { padding: 10px 16px; }
+    .page-title { font-size: 17px; }
+    .page-subtitle { font-size: 11px; }
+
+    /* Grilles adaptées tablette */
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px; }
+    .grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+    .form-row.three { grid-template-columns: 1fr 1fr !important; }
+
+    /* Modules grid 3 colonnes */
+    .modules-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 12px; }
+    .mod-hint { display: none; }
+
+    /* POS tablette : côte à côte mais compressé */
+    .pos-grid { grid-template-columns: 1fr 340px !important; }
+    .pos-products { grid-template-columns: repeat(3, 1fr) !important; }
+
+    /* Tables : légèrement plus compactes */
+    th, td { padding: 9px 12px; font-size: 13px; }
+    .table-title { font-size: 14px; }
+
+    /* Rapports */
+    .rapport-card { padding: 16px; }
+
+    /* Config sous-nav */
+    .cfg-subbtn { font-size: 12px; padding: 8px 14px; }
+
+    /* Rôles / data stats */
+    .role-grid { grid-template-columns: 1fr 1fr !important; }
+    .data-stats { grid-template-columns: repeat(4, 1fr); }
+  }
 
   /* ══════════════════════════════════════════════════════
      RESPONSIVE MOBILE — Optimisé Android & iOS
@@ -1155,6 +1302,12 @@
 </style>
 </head>
 <body>
+
+<div id="print-zone"></div>
+<!-- FAB panier mobile -->
+<button id="fab-cart" class="hidden" onclick="switchPosTab('cart')">
+  🛒 <span id="fab-cart-label">Voir le panier</span>
+</button>
 
 <!-- SIDEBAR -->
 <nav id="sidebar">
@@ -1634,7 +1787,11 @@ function renderSessionActions(container) {
         <span class="session-chip-name">${esc(currentUser.nom)}</span>
         <span class="session-chip-role">${esc(currentUser.role)}</span>
       </div>
-      <div id="net-indicator" title="Statut réseau" style="width:9px;height:9px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;transition:all .4s;flex-shrink:0;" ></div>
+      <button id="dark-toggle" onclick="toggleDark()" title="Mode sombre"
+  style="background:none;border:none;cursor:pointer;font-size:18px;width:36px;height:36px;
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  color:var(--text2);transition:all .15s;" aria-label="Changer le thème">🌙</button>
+<div id="net-indicator" title="Statut réseau" style="width:9px;height:9px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;transition:all .4s;flex-shrink:0;" ></div>
       <button class="btn btn-ghost" onclick="openSyncModal()" title="Synchroniser" style="display:flex;align-items:center;gap:5px;font-size:13px">
         ☁ <span class="btn-label">Sync</span>
       </button>
@@ -1700,6 +1857,7 @@ function logout() {
 function apresModifStock(msg='', type='success') {
   save('articles', articles);
   updateAlerteBadge();
+  checkStockNotifs(); // notifications push si stock critique
   if (msg) toast(msg, type);
 }
 
@@ -2983,7 +3141,12 @@ function pageVentes(c, ta) {
     <div class="pos-right" id="pos-panel-cart">
       <div class="cart-head" style="flex-direction:column;align-items:flex-start;gap:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-          <span>🛒 Commande <span id="cart-count" style="color:var(--accent)"></span></span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-ghost btn-sm" id="btn-back-products"
+              onclick="switchPosTab('prod')"
+              style="display:none;padding:6px 10px;">← Produits</button>
+            <span>🛒 Commande <span id="cart-count" style="color:var(--accent)"></span></span>
+          </div>
           <button class="btn btn-ghost btn-sm" onclick="viderCart()">🗑️ Vider</button>
         </div>
         <!-- Nom du client inline -->
@@ -3097,6 +3260,59 @@ function filterPOS() {
       <div class="prod-stock">Stock: ${fmtNum(a.qte)} ${a.unite}</div>
     </div>`;
   }).join('') || '<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:30px">Aucun résultat</div>';
+}
+
+
+// ── POS : Basculer entre Produits et Caisse (mobile/tablette) ────────────────
+function switchPosTab(tab) {
+  const isMobile = window.innerWidth <= 900;
+  const prod = document.getElementById('pos-panel-prod');
+  const cart = document.getElementById('pos-panel-cart');
+  const tProd = document.getElementById('pos-tab-prod');
+  const tCart = document.getElementById('pos-tab-cart');
+  if (!prod || !cart) return;
+
+  if (isMobile) {
+    if (tab === 'cart') {
+      prod.classList.add('mobile-hidden');
+      cart.classList.add('mobile-active');
+      const fab = document.getElementById('fab-cart');
+      if (fab) fab.classList.add('hidden');
+      const backBtn = document.getElementById('btn-back-products');
+      if (backBtn) backBtn.style.display = '';
+      // Focus sur le premier champ du panier
+      setTimeout(() => cart.querySelector('input, button')?.focus(), 100);
+    } else {
+      prod.classList.remove('mobile-hidden');
+      cart.classList.remove('mobile-active');
+      const backBtn2 = document.getElementById('btn-back-products');
+      if (backBtn2) backBtn2.style.display = 'none';
+      updatePosCartBadge(); // réafficher le FAB si panier non vide
+      setTimeout(() => document.getElementById('pos-search')?.focus(), 100);
+    }
+  }
+  tProd?.classList.toggle('active', tab === 'prod');
+  tCart?.classList.toggle('active', tab === 'cart');
+}
+
+// ── POS : Badge panier ────────────────────────────────────────────────────────
+function updatePosCartBadge() {
+  const totalQte = cartItems.reduce((s, i) => s + i.qte, 0);
+  const totalMnt = cartItems.reduce((s, i) => s + i.total, 0);
+  // Badge onglet
+  const badge = document.getElementById('pos-cart-badge');
+  if (badge) { badge.textContent = totalQte; badge.style.display = totalQte > 0 ? 'inline' : 'none'; }
+  // FAB panier mobile
+  const fab = document.getElementById('fab-cart');
+  const fabLabel = document.getElementById('fab-cart-label');
+  if (fab) {
+    if (totalQte > 0 && window.innerWidth <= 900) {
+      fab.classList.remove('hidden');
+      if (fabLabel) fabLabel.textContent = `Voir panier (${totalQte}) — ${fmt(totalMnt)}`;
+    } else {
+      fab.classList.add('hidden');
+    }
+  }
 }
 
 function addToCart(artId) {
@@ -3664,6 +3880,7 @@ function pageCommandes(c, ta) {
         </span></td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost btn-sm" onclick="voirCommande('${cmd.id}')" title="Voir">👁️</button>
+          <button class="btn btn-ghost btn-sm" onclick="printBonCommande('${cmd.id}')" title="Imprimer bon de commande">🖨️</button>
           ${cmd.statut!=='Livré' ? `<button class="btn btn-green btn-sm" onclick="modalReception('${cmd.id}')" title="Réceptionner">📦</button>` : ''}
           <button class="btn btn-ghost btn-sm" onclick="deleteCmd('${cmd.id}')" title="Supprimer">🗑️</button>
         </td>
@@ -4029,7 +4246,9 @@ function deleteClient(id) {
 //  PAGE: RAPPORTS
 // ═══════════════════════════════════════════════════════
 function pageRapports(c, ta) {
-  ta.innerHTML = `<button class="btn btn-ghost" onclick="window.print()">🖨️ Imprimer</button>`;
+  ta.innerHTML = `
+  <button class="btn btn-ghost" onclick="printRapportJournee()">🖨️ Rapport journalier</button>
+`;
   const caTotal = ventes.reduce((s,v)=>s+v.total,0);
   const caMois = ventes.filter(v=>v.date?.startsWith(today().slice(0,7))).reduce((s,v)=>s+v.total,0);
   const nbVentes = ventes.length;
@@ -5191,6 +5410,301 @@ function autoLogout() {
 }
 
 
+
+// ══════════════════════════════════════════════════════
+//  IMPRESSIONS — Tickets, Factures, Bons de commande
+// ══════════════════════════════════════════════════════
+
+function printZone(content) {
+  document.getElementById('print-zone').innerHTML = content;
+  window.print();
+  setTimeout(() => { document.getElementById('print-zone').innerHTML = ''; }, 2000);
+}
+
+/* ── TICKET DE CAISSE ── */
+function printTicket(venteId) {
+  const v = ventes.find(x => x.id === venteId);
+  if (!v) return;
+  const site = getCurrentSite();
+  const logoHtml = config.logo
+    ? `<img class="t-logo" src="${config.logo}" alt="Logo"><br>`  : '';
+  const itemsHtml = (v.items || []).map(it => {
+    const a = articles.find(x => x.id === it.artId) || {};
+    return `<div class="t-item"><span>${esc(a.nom||it.artId)}</span><span>${fmt(it.total)}</span></div>
+            <div class="t-item-det">${it.qte} × ${fmt(it.pu)}</div>`;
+  }).join('');
+  const paiementsHtml = (v.paiements || [{mode:'Espèces', montant:v.total}]).map(p =>
+    `<div class="t-total-row"><span>${p.mode}</span><span>${fmt(p.montant)}</span></div>`
+  ).join('');
+  const monnaie = (v.paiements||[]).reduce((s,p)=>s+p.montant,0) - v.total;
+
+  printZone(`<div class="ticket">
+    <div class="t-center">
+      ${logoHtml}
+      <div class="t-store">${esc(config.magasinNom||'Mon Magasin')}</div>
+      <div class="t-sub">${esc(site.nom)} · ${esc(config.tel||'')} </div>
+      <div class="t-sub">${esc(config.adresse||config.ville||'')}</div>
+    </div>
+    <div class="t-sep"></div>
+    <div class="t-total-row t-sub"><span>Ticket N°</span><span>${v.id.slice(-6).toUpperCase()}</span></div>
+    <div class="t-total-row t-sub"><span>Date</span><span>${fmtDate(v.date)} ${new Date(v.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span></div>
+    <div class="t-total-row t-sub"><span>Caissier</span><span>${esc(currentUser?.nom||'—')}</span></div>
+    ${v.clientNom ? `<div class="t-total-row t-sub"><span>Client</span><span>${esc(v.clientNom)}</span></div>` : ''}
+    <div class="t-sep"></div>
+    ${itemsHtml}
+    <div class="t-sep"></div>
+    <div class="t-total-row"><span>Sous-total</span><span>${fmt(v.sousTotal||v.total)}</span></div>
+    ${v.remise ? `<div class="t-total-row"><span>Remise</span><span>-${fmt(v.remise)}</span></div>` : ''}
+    ${config.tva && v.tvaAmt ? `<div class="t-total-row"><span>TVA (${config.tva}%)</span><span>${fmt(v.tvaAmt)}</span></div>` : ''}
+    <div class="t-sep"></div>
+    <div class="t-total-row t-big"><span>TOTAL</span><span>${fmt(v.total)} ${config.devise||'FCFA'}</span></div>
+    <div class="t-sep"></div>
+    ${paiementsHtml}
+    ${monnaie > 0 ? `<div class="t-total-row"><span>Monnaie rendue</span><span>${fmt(monnaie)}</span></div>` : ''}
+    <div class="t-sep"></div>
+    <div class="t-center t-sub" style="margin-top:6px">
+      ${esc(config.footerDoc || 'Merci de votre visite !')}<br>
+      ${config.rccm ? 'RCCM: '+esc(config.rccm) : ''}
+    </div>
+  </div>`);
+}
+
+/* ── FACTURE CLIENT ── */
+function printFacture(venteId) {
+  const v = ventes.find(x => x.id === venteId);
+  if (!v) return;
+  const site = getCurrentSite();
+  const num = 'FAC-' + v.id.slice(-8).toUpperCase();
+  const itemsRows = (v.items||[]).map(it => {
+    const a = articles.find(x=>x.id===it.artId)||{};
+    return `<tr>
+      <td>${esc(a.ref||'')} ${esc(a.nom||it.artId)}</td>
+      <td style="text-align:center">${it.qte} ${esc(a.unite||'')}</td>
+      <td style="text-align:right">${fmt(it.pu)}</td>
+      <td style="text-align:right">${it.remise?it.remise+'%':'—'}</td>
+      <td style="text-align:right;font-weight:700">${fmt(it.total)}</td>
+    </tr>`;
+  }).join('');
+
+  printZone(`<div class="facture">
+    <div class="f-header">
+      <div>
+        ${config.logo ? `<img src="${config.logo}" style="max-height:50px;object-fit:contain;margin-bottom:8px"><br>` : ''}
+        <strong style="font-size:18px">${esc(config.magasinNom||'Mon Magasin')}</strong><br>
+        ${esc(config.adresse||'')} ${esc(config.ville||'')}<br>
+        Tél: ${esc(config.tel||'—')} · ${esc(config.email||'')}<br>
+        ${config.rccm?'RCCM: '+esc(config.rccm):''} ${config.nif?'· NIF: '+esc(config.nif):''}
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:22px;font-weight:900;color:#1a56db">FACTURE</div>
+        <div>N° <strong>${num}</strong></div>
+        <div>Date: ${fmtDate(v.date)}</div>
+        <div>Site: ${esc(site.nom)}</div>
+      </div>
+    </div>
+    ${v.clientNom ? `<div style="border:1px solid #ddd;padding:10px;border-radius:8px;margin-bottom:16px">
+      <strong>Facturé à :</strong> ${esc(v.clientNom)}
+    </div>` : ''}
+    <table>
+      <thead><tr>
+        <th>Désignation</th><th style="text-align:center">Qté</th>
+        <th style="text-align:right">P.U.</th><th style="text-align:right">Rem.</th>
+        <th style="text-align:right">Total</th>
+      </tr></thead>
+      <tbody>${itemsRows}</tbody>
+    </table>
+    <div class="f-total-box">
+      <div>Sous-total : ${fmt(v.sousTotal||v.total)} ${config.devise||'FCFA'}</div>
+      ${v.remise?`<div>Remise : -${fmt(v.remise)}</div>`:''}
+      ${config.tva&&v.tvaAmt?`<div>TVA (${config.tva}%) : ${fmt(v.tvaAmt)}</div>`:''}
+      <div style="font-size:16px;border-top:2px solid #1a56db;padding-top:6px;margin-top:6px">
+        TOTAL TTC : <strong>${fmt(v.total)} ${config.devise||'FCFA'}</strong>
+      </div>
+    </div>
+    <div style="margin-top:20px;font-size:11px;color:#555;border-top:1px solid #eee;padding-top:10px">
+      ${esc(config.footerDoc||'')} ${esc(config.cgv||'')}
+      ${config.banque?'<br>Règlement par virement : '+esc(config.banque):''}
+    </div>
+  </div>`);
+}
+
+/* ── BON DE COMMANDE ── */
+function printBonCommande(cmdId) {
+  const cmd = commandes.find(x => x.id === cmdId);
+  if (!cmd) return;
+  const fourn = fournisseurs.find(x => x.id === cmd.fournisseurId) || {};
+  const num = 'BC-' + cmd.num;
+  const rows = (cmd.items||[]).map(it => {
+    const a = articles.find(x=>x.id===it.artId)||{};
+    return `<tr>
+      <td>${esc(a.ref||'')} ${esc(a.nom||it.artId)}</td>
+      <td style="text-align:center">${it.qte} ${esc(a.unite||'')}</td>
+      <td style="text-align:right">${fmt(it.prixUnitaire)}</td>
+      <td style="text-align:right;font-weight:700">${fmt(it.total)}</td>
+      <td style="text-align:center">${it.qteLivree||0} / ${it.qte}</td>
+    </tr>`;
+  }).join('');
+
+  printZone(`<div class="bon-cmd">
+    <div style="display:flex;justify-content:space-between;margin-bottom:20px">
+      <div>
+        ${config.logo?`<img src="${config.logo}" style="max-height:45px;object-fit:contain;margin-bottom:6px"><br>`:''}
+        <strong style="font-size:16px">${esc(config.magasinNom||'Mon Magasin')}</strong><br>
+        ${esc(config.adresse||'')} · Tél: ${esc(config.tel||'—')}
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:20px;font-weight:900;color:#1a56db">BON DE COMMANDE</div>
+        <div>N° <strong>${num}</strong></div>
+        <div>Date: ${fmtDate(cmd.date)}</div>
+        ${cmd.dateLivraisonPrevue?`<div>Livraison prévue: ${fmtDate(cmd.dateLivraisonPrevue)}</div>`:''}
+      </div>
+    </div>
+    <div style="display:flex;gap:20px;margin-bottom:16px">
+      <div style="flex:1;border:1px solid #ddd;padding:10px;border-radius:6px">
+        <strong>Fournisseur :</strong><br>
+        ${esc(fourn.nom||'—')}<br>
+        ${esc(fourn.tel||'')} ${esc(fourn.email||'')}
+      </div>
+      <div style="flex:1;border:1px solid #ddd;padding:10px;border-radius:6px">
+        <strong>Site de livraison :</strong><br>
+        ${esc(getCurrentSite().nom)}<br>
+        ${esc(config.adresse||'')}
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#f0f4ff">
+        <th style="border:1px solid #ddd;padding:7px;text-align:left">Désignation</th>
+        <th style="border:1px solid #ddd;padding:7px;text-align:center">Qté cmd.</th>
+        <th style="border:1px solid #ddd;padding:7px;text-align:right">P.U.</th>
+        <th style="border:1px solid #ddd;padding:7px;text-align:right">Total</th>
+        <th style="border:1px solid #ddd;padding:7px;text-align:center">Livré</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="text-align:right;margin-top:12px;font-size:14px;font-weight:700">
+      Total commande : ${fmt(cmd.total)} ${config.devise||'FCFA'}
+    </div>
+    <div style="margin-top:30px;display:flex;justify-content:space-between;font-size:11px">
+      <div>Signature fournisseur :<br><br>___________________________</div>
+      <div>Signature responsable :<br><br>___________________________</div>
+    </div>
+  </div>`);
+}
+
+/* ── RAPPORT JOURNALIER ── */
+function printRapportJournee(date=today()) {
+  const ventesJ = ventes.filter(v=>v.date===date && (v.siteId===currentSiteId||!v.siteId));
+  const caJ = ventesJ.reduce((s,v)=>s+v.total,0);
+  const nbV = ventesJ.length;
+  const topArts = articles.map(a=>{
+    const qte = ventesJ.reduce((s,v)=>{
+      const it=(v.items||[]).find(i=>i.artId===a.id);
+      return s+(it?it.qte:0);
+    },0);
+    const ca = ventesJ.reduce((s,v)=>{
+      const it=(v.items||[]).find(i=>i.artId===a.id);
+      return s+(it?it.total:0);
+    },0);
+    return {...a, qteVendue:qte, caVendu:ca};
+  }).filter(a=>a.qteVendue>0).sort((a,b)=>b.caVendu-a.caVendu).slice(0,10);
+
+  const rows = topArts.map(a=>`<tr>
+    <td style="padding:6px 8px;border:1px solid #ddd">${esc(a.nom)}</td>
+    <td style="padding:6px 8px;border:1px solid #ddd;text-align:center">${a.qteVendue} ${esc(a.unite||'')}</td>
+    <td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${fmt(a.caVendu)}</td>
+  </tr>`).join('');
+
+  printZone(`<div class="facture">
+    <div style="text-align:center;margin-bottom:20px">
+      ${config.logo?`<img src="${config.logo}" style="max-height:45px;object-fit:contain;margin-bottom:6px"><br>`:''}
+      <div style="font-size:18px;font-weight:900">${esc(config.magasinNom||'Mon Magasin')}</div>
+      <div style="font-size:16px;font-weight:700;color:#1a56db;margin:8px 0">RAPPORT JOURNALIER</div>
+      <div style="font-size:13px;color:#555">Site: ${esc(getCurrentSite().nom)} · Date: ${fmtDate(date)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;text-align:center">
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px">
+        <div style="font-size:22px;font-weight:900;color:#1a56db">${fmt(caJ)}</div>
+        <div style="font-size:11px;color:#555">Chiffre d'affaires</div>
+      </div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px">
+        <div style="font-size:22px;font-weight:900;color:#10a861">${nbV}</div>
+        <div style="font-size:11px;color:#555">Ventes réalisées</div>
+      </div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px">
+        <div style="font-size:22px;font-weight:900;color:#7c5cff">${nbV>0?fmt(Math.round(caJ/nbV)):'0'}</div>
+        <div style="font-size:11px;color:#555">Panier moyen</div>
+      </div>
+    </div>
+    ${topArts.length>0?`
+    <div style="font-weight:700;margin-bottom:8px;font-size:13px">Top articles vendus :</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#f0f4ff">
+        <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Article</th>
+        <th style="padding:6px 8px;border:1px solid #ddd;text-align:center">Quantité</th>
+        <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">CA</th>
+      </tr></thead><tbody>${rows}</tbody>
+    </table>`:
+    '<div style="text-align:center;color:#555;padding:20px">Aucune vente ce jour</div>'}
+    <div style="margin-top:30px;font-size:10px;color:#888;text-align:center">
+      Édité le ${new Date().toLocaleString('fr-FR')} · ${esc(currentUser?.nom||'')}
+    </div>
+  </div>`);
+}
+
+
+
+// ══════════════════════════════════════════════════════
+//  MODE SOMBRE
+// ══════════════════════════════════════════════════════
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const btn = document.getElementById('dark-toggle');
+  if (btn) btn.textContent = dark ? '☀️' : '🌙';
+  localStorage.setItem('mp_darkMode', dark ? '1' : '0');
+}
+function toggleDark() {
+  const current = document.documentElement.getAttribute('data-theme') === 'dark';
+  applyTheme(!current);
+}
+// Appliquer au démarrage
+const savedTheme = localStorage.getItem('mp_darkMode');
+if (savedTheme === '1') applyTheme(true);
+else if (savedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme(true);
+
+
+
+// ══════════════════════════════════════════════════════
+//  NOTIFICATIONS PUSH — Alertes de stock
+// ══════════════════════════════════════════════════════
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') toast('🔔 Notifications de stock activées');
+  }
+}
+
+function sendStockNotif(article) {
+  if (Notification.permission !== 'granted') return;
+  const stock = getStock(article);
+  const isRupture = stock === 0;
+  new Notification(isRupture ? '🔴 Rupture de stock !' : '⚠️ Stock critique', {
+    body: `${article.nom} — ${isRupture ? 'Rupture totale' : 'Stock: '+stock+' '+article.unite+' (seuil: '+article.seuilAlerte+')'}`,
+    icon: './icon-192.png',
+    badge: './icon-72.png',
+    tag: 'stock-' + article.id, // remplace la précédente pour le même article
+    silent: false
+  });
+}
+
+function checkStockNotifs() {
+  if (Notification.permission !== 'granted') return;
+  articles.forEach(a => {
+    if (getStock(a) <= a.seuilAlerte) sendStockNotif(a);
+  });
+}
+
+
 // ─── INIT ────────────────────────────────────────────────────────────────────
 users = normalizeUsers(users);
 save('users', users);
@@ -5202,8 +5716,9 @@ if (!currentUser) {
   updateNavigationVisibility();
   toast(`Bienvenue ${currentUser.nom} 👋`);
   nav(getLandingPageForUser());
-  startAutoSync();       // sync auto JSONBin
-  startInactivityWatch(); // déconnexion auto
+  startAutoSync();
+  startInactivityWatch();
+  setTimeout(requestNotifPermission, 3000); // demander après 3s
 }
 </script>
 
