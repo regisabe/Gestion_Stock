@@ -4243,87 +4243,650 @@ function deleteClient(id) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  PAGE: RAPPORTS
+//  PAGE: RAPPORTS — Module complet
 // ═══════════════════════════════════════════════════════
-function pageRapports(c, ta) {
-  ta.innerHTML = `
-  <button class="btn btn-ghost" onclick="printRapportJournee()">🖨️ Rapport journalier</button>
-`;
-  const caTotal = ventes.reduce((s,v)=>s+v.total,0);
-  const caMois = ventes.filter(v=>v.date?.startsWith(today().slice(0,7))).reduce((s,v)=>s+v.total,0);
-  const nbVentes = ventes.length;
-  const valStock = articles.reduce((s,a)=>s+getStock(a)*a.prixAchat,0);
-  const panier = nbVentes ? caTotal/nbVentes : 0;
-  
-  // CA par catégorie
-  const caByCat = categories.map(cat => {
-    const artIds = articles.filter(a=>a.catId===cat.id).map(a=>a.id);
-    const ca = ventes.reduce((s,v) => s + (v.items||[]).filter(i=>artIds.includes(i.artId)).reduce((ss,i)=>ss+i.total,0), 0);
-    return { ...cat, ca };
+
+// ── État du module rapports ──────────────────────────
+let rptTab    = 'vue';
+let rptPeriode= '30j';
+let rptDebut  = '';
+let rptFin    = '';
+
+// ── Helpers graphiques SVG ───────────────────────────
+function svgLine(data, h=110, color='#2b6ef0') {
+  if (!data || data.length < 2) return '<div style="text-align:center;padding:24px;color:var(--text3);font-size:12px">Données insuffisantes pour afficher le graphique</div>';
+  const W=500, H=h, pad={t:12,r:12,b:28,l:12};
+  const vals = data.map(d=>d.v);
+  const max=Math.max(...vals,1), min=Math.min(...vals,0);
+  const rangeV=max-min||1;
+  const iW=W-pad.l-pad.r, iH=H-pad.t-pad.b;
+  const pts = data.map((d,i)=>({
+    x: pad.l + (i/(data.length-1))*iW,
+    y: pad.t + (1-(d.v-min)/rangeV)*iH
+  }));
+  const line = pts.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const area = `${line} L${pts[pts.length-1].x.toFixed(1)},${(H-pad.b).toFixed(1)} L${pts[0].x.toFixed(1)},${(H-pad.b).toFixed(1)} Z`;
+  const gid = 'g'+Math.random().toString(36).slice(2,6);
+  // Labels: afficher chaque N-ième
+  const step = Math.max(1, Math.floor(data.length/6));
+  const labels = data.filter((_,i)=> i%step===0 || i===data.length-1)
+    .map((d,_,arr)=> {
+      const i = data.indexOf(d);
+      const x = pad.l+(i/(data.length-1))*iW;
+      return `<text x="${x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="var(--text3)">${d.l}</text>`;
+    }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${h}px;display:block" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity=".18"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity=".01"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#${gid})"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>vals[i]>0?`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${color}" stroke="white" stroke-width="1.5"/>`:'').join('')}
+    ${labels}
+  </svg>`;
+}
+
+function svgBar(data, h=130, color='#2b6ef0') {
+  if (!data || !data.length) return '';
+  const W=500, H=h, pad={t:10,r:10,b:28,l:10};
+  const max=Math.max(...data.map(d=>d.v),1);
+  const iW=W-pad.l-pad.r, iH=H-pad.t-pad.b;
+  const bW=Math.min(40,(iW/data.length)*0.6);
+  const gap=iW/data.length;
+  const bars = data.map((d,i)=>{
+    const bH=(d.v/max)*iH; const x=pad.l+i*gap+(gap-bW)/2;
+    const y=pad.t+iH-bH;
+    const col = d.c||color;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bW.toFixed(1)}" height="${bH.toFixed(1)}" rx="4" fill="${col}" opacity=".85"/>
+    <text x="${(x+bW/2).toFixed(1)}" y="${H-5}" text-anchor="middle" font-size="8" fill="var(--text3)">${String(d.l).substring(0,7)}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${h}px;display:block" xmlns="http://www.w3.org/2000/svg">${bars}</svg>`;
+}
+
+function svgDonut(slices, size=110) {
+  const total=slices.reduce((s,sl)=>s+sl.v,0);
+  if(!total) return '<div style="text-align:center;color:var(--text3);font-size:12px;padding:10px">Aucune donnée</div>';
+  const r=44,cx=60,cy=60; let a=-90;
+  function pt(ang){const rad=ang*Math.PI/180; return {x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)};}
+  const paths=slices.map(sl=>{
+    if(!sl.v) return '';
+    const pct=sl.v/total; const sa=a; a+=pct*360;
+    const s=pt(sa), e=pt(a); const large=pct>0.5?1:0;
+    return `<path d="M${cx},${cy} L${s.x.toFixed(1)},${s.y.toFixed(1)} A${r},${r} 0 ${large} 1 ${e.x.toFixed(1)},${e.y.toFixed(1)} Z" fill="${sl.c}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 120 120" style="width:${size}px;height:${size}px;flex-shrink:0">${paths}
+    <circle cx="${cx}" cy="${cy}" r="${r*0.58}" fill="var(--card)"/>
+  </svg>`;
+}
+
+// ── Filtre de données ────────────────────────────────
+function rptVentesFiltered() {
+  return ventes.filter(v => {
+    if (rptDebut && v.date < rptDebut) return false;
+    if (rptFin   && v.date > rptFin)   return false;
+    return true;
+  });
+}
+function setPeriode(p, btn) {
+  rptPeriode = p;
+  document.querySelectorAll('.rpt-period-btn').forEach(b=>b.classList.remove('active'));
+  btn?.classList.add('active');
+  const now = new Date();
+  function dStr(d){ return d.toISOString().slice(0,10); }
+  if (p==='today') { rptDebut=rptFin=dStr(now); }
+  else if (p==='7j')  { const d=new Date(now); d.setDate(d.getDate()-6);  rptDebut=dStr(d); rptFin=dStr(now); }
+  else if (p==='30j') { const d=new Date(now); d.setDate(d.getDate()-29); rptDebut=dStr(d); rptFin=dStr(now); }
+  else if (p==='3m')  { const d=new Date(now); d.setMonth(d.getMonth()-3); rptDebut=dStr(d); rptFin=dStr(now); }
+  else if (p==='12m') { const d=new Date(now); d.setFullYear(d.getFullYear()-1); rptDebut=dStr(d); rptFin=dStr(now); }
+  else if (p==='tout'){ rptDebut=''; rptFin=''; }
+  // Sync custom inputs
+  const di=document.getElementById('rpt-date-debut'), fi=document.getElementById('rpt-date-fin');
+  if(di) di.value=rptDebut; if(fi) fi.value=rptFin;
+  rptRenderTab(rptTab);
+}
+function applyCustomRange(){
+  rptDebut=document.getElementById('rpt-date-debut')?.value||'';
+  rptFin=document.getElementById('rpt-date-fin')?.value||'';
+  rptPeriode='custom';
+  document.querySelectorAll('.rpt-period-btn').forEach(b=>b.classList.remove('active'));
+  rptRenderTab(rptTab);
+}
+function switchRptTab(tab, btn) {
+  rptTab = tab;
+  document.querySelectorAll('.rpt-tab-btn').forEach(b=>b.classList.remove('active'));
+  btn?.classList.add('active');
+  rptRenderTab(tab);
+}
+function rptRenderTab(tab) {
+  const zone = document.getElementById('rpt-content');
+  if (!zone) return;
+  const fns = { vue:rptVue, ventes:rptVentes, stock:rptStock, clients:rptClients, journal:rptJournal };
+  zone.innerHTML = (fns[tab]||rptVue)();
+  if(window.innerWidth<=768) mobilizeTable();
+}
+
+// ── Données communes ─────────────────────────────────
+function rptDailyData(ventesF, nDays=30) {
+  const out=[]; const now=new Date();
+  for(let i=nDays-1;i>=0;i--){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    const ca=ventesF.filter(v=>v.date===ds).reduce((s,v)=>s+v.total,0);
+    out.push({l:ds.slice(5),v:ca,d:ds});
+  }
+  return out;
+}
+
+// ── SUB: VUE D'ENSEMBLE ──────────────────────────────
+function rptVue() {
+  const vF = rptVentesFiltered();
+  const ca  = vF.reduce((s,v)=>s+v.total,0);
+  const nbV = vF.length;
+  const panier = nbV ? ca/nbV : 0;
+
+  // Marge brute
+  const marge = vF.reduce((s,v)=>{
+    return s+(v.items||[]).reduce((ss,it)=>{
+      const a=articles.find(x=>x.id===it.artId);
+      return ss+(a?it.total-a.prixAchat*it.qte:0);
+    },0);
+  },0);
+  const margeP = ca ? (marge/ca*100) : 0;
+
+  // Évolution CA (30 derniers jours sauf si période < 30j)
+  const nDays = rptPeriode==='today'?1:rptPeriode==='7j'?7:rptPeriode==='3m'?90:rptPeriode==='12m'?365:30;
+  const daily = rptDailyData(vF, Math.min(nDays,90));
+
+  // Top catégories
+  const caByCat = categories.map(cat=>{
+    const aids=articles.filter(a=>a.catId===cat.id).map(a=>a.id);
+    const c=vF.reduce((s,v)=>s+(v.items||[]).filter(i=>aids.includes(i.artId)).reduce((ss,i)=>ss+i.total,0),0);
+    return {...cat,ca:c};
   }).filter(c=>c.ca>0).sort((a,b)=>b.ca-a.ca);
+  const maxCat=Math.max(...caByCat.map(c=>c.ca),1);
 
-  const maxCa = Math.max(...caByCat.map(c=>c.ca),1);
+  // Top articles
+  const topArts = articles.map(a=>{
+    const c=vF.reduce((s,v)=>{const it=(v.items||[]).find(i=>i.artId===a.id); return s+(it?it.total:0);},0);
+    const q=vF.reduce((s,v)=>{const it=(v.items||[]).find(i=>i.artId===a.id); return s+(it?it.qte:0);},0);
+    return {...a,ca:c,qteV:q};
+  }).filter(a=>a.ca>0).sort((a,b)=>b.ca-a.ca).slice(0,5);
 
-  c.innerHTML = `
-  <div class="stats-grid" style="margin-bottom:24px">
-    <div class="stat-card green"><div class="stat-icon">💰</div>
-      <div class="stat-value">${fmt(caTotal)}</div><div class="stat-label">CA total toutes périodes</div></div>
-    <div class="stat-card blue"><div class="stat-icon">📅</div>
-      <div class="stat-value">${fmt(caMois)}</div><div class="stat-label">CA du mois en cours</div></div>
-    <div class="stat-card orange"><div class="stat-icon">🧾</div>
-      <div class="stat-value">${nbVentes}</div><div class="stat-label">Nombre de ventes</div></div>
-    <div class="stat-card green"><div class="stat-icon">🛒</div>
-      <div class="stat-value">${fmt(panier)}</div><div class="stat-label">Panier moyen</div></div>
+  // Méthodes de paiement
+  const modes={};
+  vF.forEach(v=>(v.paiements||[{mode:'Espèces',montant:v.total}]).forEach(p=>{modes[p.mode]=(modes[p.mode]||0)+p.montant;}));
+  const mColors=['#2b6ef0','#10a861','#f97316','#7c5cff','#e53e3e'];
+  const modeSlices=Object.entries(modes).map(([k,v],i)=>({l:k,v,c:mColors[i%mColors.length]}));
+
+  // Comparaison période précédente
+  let caPrec=0;
+  if(rptDebut && rptFin){
+    const ms=new Date(rptFin)-new Date(rptDebut);
+    const prevFin=new Date(rptDebut); prevFin.setDate(prevFin.getDate()-1);
+    const prevDeb=new Date(prevFin); prevDeb.setTime(prevDeb.getTime()-ms);
+    const pD=prevDeb.toISOString().slice(0,10), pF=prevFin.toISOString().slice(0,10);
+    caPrec=ventes.filter(v=>v.date>=pD&&v.date<=pF).reduce((s,v)=>s+v.total,0);
+  }
+  const trend = caPrec>0 ? ((ca-caPrec)/caPrec*100) : null;
+
+  return `
+  <style>
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 16px;position:relative;overflow:hidden}
+    .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-c,var(--accent))}
+    .kpi-icon{font-size:24px;margin-bottom:8px}
+    .kpi-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1;margin-bottom:4px}
+    .kpi-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+    .kpi-trend{font-size:11px;font-weight:700;margin-top:6px}
+    .kpi-trend.up{color:var(--green)} .kpi-trend.dn{color:var(--red)} .kpi-trend.flat{color:var(--text3)}
+    .rpt-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+    .rpt-card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .rpt-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    .cat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .cat-bar-wrap{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+    .cat-bar{height:100%;border-radius:4px;transition:width .4s}
+    .art-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+    .art-row:last-child{border-bottom:none}
+    .mode-legend{display:flex;flex-direction:column;gap:8px;justify-content:center}
+    .mode-item{display:flex;align-items:center;gap:8px;font-size:12px}
+    .mode-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    @media(max-width:768px){.kpi-grid{grid-template-columns:1fr 1fr}.rpt-grid2{grid-template-columns:1fr}}
+    @media(max-width:400px){.kpi-grid{grid-template-columns:1fr}}
+  </style>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi" style="--kpi-c:#10a861">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-val">${fmt(ca)}</div>
+      <div class="kpi-lbl">Chiffre d'affaires</div>
+      ${trend!==null?`<div class="kpi-trend ${trend>=0?'up':'dn'}">${trend>=0?'▲':'▼'} ${Math.abs(trend).toFixed(1)}% vs période préc.</div>`:''}
+    </div>
+    <div class="kpi" style="--kpi-c:#2b6ef0">
+      <div class="kpi-icon">🧾</div>
+      <div class="kpi-val">${nbV}</div>
+      <div class="kpi-lbl">Ventes réalisées</div>
+      <div class="kpi-trend flat">${vF.filter(v=>v.date===today()).length} aujourd'hui</div>
+    </div>
+    <div class="kpi" style="--kpi-c:#f97316">
+      <div class="kpi-icon">🛒</div>
+      <div class="kpi-val">${fmt(panier)}</div>
+      <div class="kpi-lbl">Panier moyen</div>
+      <div class="kpi-trend flat">${config.devise||'FCFA'} par vente</div>
+    </div>
+    <div class="kpi" style="--kpi-c:#7c5cff">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-val">${margeP.toFixed(1)}%</div>
+      <div class="kpi-lbl">Marge brute</div>
+      <div class="kpi-trend ${margeP>=20?'up':margeP>=10?'flat':'dn'}">${fmt(marge)}</div>
+    </div>
   </div>
 
-  <div class="grid-2" style="margin-bottom:20px">
-    <div class="rapport-card">
-      <div class="rapport-card-title">📊 CA par catégorie</div>
-      ${caByCat.length===0?`<div style="color:var(--text3);font-size:13px">Aucune vente enregistrée</div>`:`
-      ${caByCat.map(cat=>`
-        <div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:13px">${cat.icone} ${cat.nom}</span>
-            <span style="font-size:13px;font-weight:700;color:var(--green)">${fmt(cat.ca)}</span>
+  <!-- Graphique évolution CA -->
+  <div class="rpt-card">
+    <div class="rpt-card-title">📉 Évolution du chiffre d'affaires
+      <span style="font-size:11px;color:var(--text3);font-weight:500;margin-left:auto">${daily.length} jours</span>
+    </div>
+    ${svgLine(daily, 130, '#2b6ef0')}
+  </div>
+
+  <div class="rpt-grid2">
+    <!-- CA par catégorie -->
+    <div class="rpt-card" style="margin-bottom:0">
+      <div class="rpt-card-title">🗂️ CA par catégorie</div>
+      ${caByCat.length===0?`<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">Aucune vente dans cette période</div>`:
+      caByCat.map((cat,i)=>`
+        <div class="cat-row">
+          <span style="font-size:18px;width:24px">${cat.icone}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(cat.nom)}</span>
+              <span style="font-size:12px;font-weight:800;color:var(--green);margin-left:8px;white-space:nowrap">${fmt(cat.ca)}</span>
+            </div>
+            <div class="cat-bar-wrap"><div class="cat-bar" style="width:${(cat.ca/maxCat*100).toFixed(1)}%;background:${cat.couleur||'var(--accent)'}"></div></div>
           </div>
-          <div class="progress-wrap"><div class="progress-bar" style="width:${Math.round(cat.ca/maxCa*100)}%;background:${cat.couleur}"></div></div>
-        </div>`).join('')}`}
+        </div>`).join('')}
     </div>
 
-    <div class="rapport-card">
-      <div class="rapport-card-title">📦 Valeur du stock</div>
-      ${categories.map(cat => {
-        const arts = articles.filter(a=>a.catId===cat.id);
-        const val = arts.reduce((s,a)=>s+getStock(a)*a.prixAchat,0);
-        if(!val) return '';
-        return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:13px">${cat.icone} ${cat.nom}</span>
-          <div style="text-align:right">
-            <div style="font-size:13px;font-weight:700">${fmt(val)}</div>
-            <div style="font-size:11px;color:var(--text3)">${arts.length} art. · ${arts.reduce((s,a)=>s+getStock(a),0)} unités</div>
+    <!-- Méthodes de paiement -->
+    <div class="rpt-card" style="margin-bottom:0">
+      <div class="rpt-card-title">💳 Modes de paiement</div>
+      ${modeSlices.length===0?`<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">Aucune vente</div>`:`
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        ${svgDonut(modeSlices,110)}
+        <div class="mode-legend">
+          ${modeSlices.map(m=>`
+            <div class="mode-item">
+              <div class="mode-dot" style="background:${m.c}"></div>
+              <span style="color:var(--text2)">${esc(m.l)}</span>
+              <span style="font-weight:700;color:var(--text);margin-left:auto;padding-left:8px">${fmt(m.v)}</span>
+            </div>`).join('')}
+          <div class="mode-item" style="border-top:1px solid var(--border);padding-top:6px;margin-top:2px">
+            <span style="font-weight:700;color:var(--text)">Total</span>
+            <span style="font-weight:800;color:var(--accent);margin-left:auto">${fmt(ca)}</span>
           </div>
-        </div>`;
-      }).join('')}
-      <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;display:flex;justify-content:space-between">
-        <strong>TOTAL</strong><strong style="color:var(--green)">${fmt(valStock)}</strong>
-      </div>
+        </div>
+      </div>`}
     </div>
   </div>
 
-  <div class="table-container">
-    <div class="table-header"><span class="table-title">🧾 Historique des ventes</span></div>
-    ${ventes.length===0?`<div class="empty-state"><div class="empty-icon">📈</div><div class="empty-title">Aucune vente</div></div>`:`
-    <div class="table-scroll"><table><thead><tr><th>Date</th><th>Client</th><th>Articles</th><th>Sous-total</th><th>Remise</th><th>Total</th></tr></thead><tbody>
-    ${[...ventes].sort((a,b)=>b.createdAt-a.createdAt).map(v=>`<tr>
-      <td>${fmtDate(v.date)}</td>
-      <td>${v.clientNom||'Comptant'}</td>
+  <!-- Top 5 articles -->
+  <div class="rpt-card" style="margin-top:16px">
+    <div class="rpt-card-title">🏆 Top 5 articles les plus vendus</div>
+    ${topArts.length===0?`<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">Aucune vente dans cette période</div>`:`
+    <div class="table-scroll"><table style="min-width:0;width:100%"><thead><tr>
+      <th>#</th><th>Article</th><th>Catégorie</th><th>Qté vendue</th><th>CA</th><th>% du total</th>
+    </tr></thead><tbody>
+    ${topArts.map((a,i)=>{
+      const cat=getCat(a.catId);
+      const pct=ca?((a.ca/ca)*100).toFixed(1):0;
+      return `<tr>
+        <td><span style="font-family:'Syne',sans-serif;font-weight:800;color:var(--text3)">${i+1}</span></td>
+        <td><strong>${esc(a.nom)}</strong><div style="font-size:11px;color:var(--text3)">${esc(a.ref||'')}</div></td>
+        <td><span class="badge badge-blue">${cat.icone} ${esc(cat.nom)}</span></td>
+        <td>${fmtNum(a.qteV)} ${esc(a.unite||'')}</td>
+        <td style="font-weight:700;color:var(--green)">${fmt(a.ca)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;min-width:40px">
+              <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px"></div>
+            </div>
+            <span style="font-size:11px;color:var(--text3);white-space:nowrap">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`}
+  </div>`;
+}
+
+// ── SUB: VENTES ──────────────────────────────────────
+function rptVentes() {
+  const vF = rptVentesFiltered().sort((a,b)=>b.createdAt-a.createdAt);
+  const ca  = vF.reduce((s,v)=>s+v.total,0);
+  const nDays = Math.min(30, rptPeriode==='7j'?7:rptPeriode==='today'?1:30);
+  const daily = rptDailyData(vF, nDays);
+  const barData = daily.filter(d=>d.v>0).length > 0 ? daily : [];
+
+  // CA par catégorie (barres)
+  const caByCat = categories.map(cat=>{
+    const aids=articles.filter(a=>a.catId===cat.id).map(a=>a.id);
+    const c=vF.reduce((s,v)=>s+(v.items||[]).filter(i=>aids.includes(i.artId)).reduce((ss,i)=>ss+i.total,0),0);
+    return {l:cat.nom.substring(0,8),v:c,c:cat.couleur||'var(--accent)'};
+  }).filter(c=>c.v>0);
+
+  return `
+  <div class="rpt-card">
+    <div class="rpt-card-title">📈 Évolution journalière des ventes</div>
+    ${svgBar(barData, 140, '#2b6ef0')}
+  </div>
+  <div class="rpt-card">
+    <div class="rpt-card-title">📊 CA par catégorie</div>
+    ${svgBar(caByCat, 130)}
+  </div>
+  <div class="rpt-card">
+    <div class="rpt-card-title">🧾 Liste des ventes
+      <span style="margin-left:auto;font-size:12px;color:var(--text3);font-weight:500">${vF.length} vente(s) · ${fmt(ca)}</span>
+    </div>
+    ${vF.length===0?`<div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-title">Aucune vente dans cette période</div></div>`:`
+    <div class="table-scroll"><table><thead><tr>
+      <th>Date</th><th>Client</th><th>Articles</th><th>Paiement</th><th>Total</th><th>Actions</th>
+    </tr></thead><tbody>
+    ${vF.map(v=>`<tr>
+      <td>${fmtDate(v.date)}<div style="font-size:10px;color:var(--text3)">${new Date(v.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div></td>
+      <td>${esc(v.clientNom||'Comptant')}</td>
       <td>${(v.items||[]).length} art.</td>
-      <td>${fmt(v.sousTotal)}</td>
-      <td>${v.remise?fmtNum(v.remise)+'%':'—'}</td>
+      <td>${(v.paiements||[{mode:'Espèces'}]).map(p=>`<span class="badge badge-blue">${esc(p.mode)}</span>`).join(' ')}</td>
       <td style="font-weight:700;color:var(--green)">${fmt(v.total)}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="printTicket('${v.id}')" title="Ticket">🖨️</button>
+        <button class="btn btn-ghost btn-sm" onclick="printFacture('${v.id}')" title="Facture">📄</button>
+      </td>
     </tr>`).join('')}
     </tbody></table></div>`}
   </div>`;
+}
+
+// ── SUB: STOCK ───────────────────────────────────────
+function rptStock() {
+  const vF = rptVentesFiltered();
+  const valStock = articles.reduce((s,a)=>s+getStock(a)*a.prixAchat,0);
+  const valVente  = articles.reduce((s,a)=>s+getStock(a)*a.prix,0);
+
+  // Rotation : qte vendue / stock moyen
+  const artStats = articles.map(a=>{
+    const qV=vF.reduce((s,v)=>{const it=(v.items||[]).find(i=>i.artId===a.id);return s+(it?it.qte:0);},0);
+    const stock=getStock(a);
+    const rotation = stock>0 ? (qV/stock).toFixed(2) : (qV>0?'∞':0);
+    return {...a,qVendue:qV,stock,rotation:parseFloat(rotation)||0};
+  });
+
+  const topRotation = [...artStats].filter(a=>a.rotation>0).sort((a,b)=>b.rotation-a.rotation).slice(0,5);
+  const sansMvt = artStats.filter(a=>a.qVendue===0&&a.stock>0).length;
+  const rupture  = artStats.filter(a=>a.stock===0).length;
+  const critique = artStats.filter(a=>a.stock>0&&a.stock<=a.seuilAlerte).length;
+
+  // Valeur par catégorie
+  const catStock = categories.map(cat=>{
+    const arts=articles.filter(a=>a.catId===cat.id);
+    const val=arts.reduce((s,a)=>s+getStock(a)*a.prixAchat,0);
+    const qte=arts.reduce((s,a)=>s+getStock(a),0);
+    return {...cat,val,qte,nb:arts.length};
+  }).filter(c=>c.val>0).sort((a,b)=>b.val-a.val);
+  const maxVal=Math.max(...catStock.map(c=>c.val),1);
+
+  return `
+  <div class="kpi-grid" style="margin-bottom:16px">
+    <div class="kpi" style="--kpi-c:#10a861"><div class="kpi-icon">💰</div>
+      <div class="kpi-val">${fmt(valStock)}</div><div class="kpi-lbl">Valeur stock (achat)</div></div>
+    <div class="kpi" style="--kpi-c:#2b6ef0"><div class="kpi-icon">📊</div>
+      <div class="kpi-val">${fmt(valVente)}</div><div class="kpi-lbl">Valeur stock (vente)</div></div>
+    <div class="kpi" style="--kpi-c:#e53e3e"><div class="kpi-icon">🔴</div>
+      <div class="kpi-val">${rupture}</div><div class="kpi-lbl">Articles en rupture</div></div>
+    <div class="kpi" style="--kpi-c:#f97316"><div class="kpi-icon">⚠️</div>
+      <div class="kpi-val">${critique}</div><div class="kpi-lbl">Stock critique</div></div>
+  </div>
+  <div class="rpt-grid2">
+    <div class="rpt-card" style="margin-bottom:0">
+      <div class="rpt-card-title">📦 Valeur par catégorie</div>
+      ${catStock.map(cat=>`
+        <div class="cat-row">
+          <span style="font-size:18px;width:24px">${cat.icone}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:12px;font-weight:600">${esc(cat.nom)}</span>
+              <span style="font-size:12px;font-weight:800;color:var(--accent)">${fmt(cat.val)}</span>
+            </div>
+            <div class="cat-bar-wrap"><div class="cat-bar" style="width:${(cat.val/maxVal*100).toFixed(1)}%;background:${cat.couleur||'var(--accent)'}"></div></div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">${cat.nb} articles · ${fmtNum(cat.qte)} unités</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="rpt-card" style="margin-bottom:0">
+      <div class="rpt-card-title">🔄 Top rotation (${vF.length} ventes période)</div>
+      ${topRotation.length===0?`<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">Aucun mouvement dans cette période</div>`:`
+      ${topRotation.map((a,i)=>`
+        <div class="art-row">
+          <div style="flex:1"><span style="font-size:12px;font-weight:700">${esc(a.nom)}</span>
+            <div style="font-size:11px;color:var(--text3)">Stock: ${fmtNum(a.stock)} · Vendu: ${fmtNum(a.qVendue)}</div>
+          </div>
+          <span class="badge ${a.rotation>2?'badge-green':a.rotation>0.5?'badge-orange':'badge-gray'}" style="margin-left:10px">×${a.rotation.toFixed(2)}</span>
+        </div>`).join('')}
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)">
+        ⚠️ ${sansMvt} article(s) sans mouvement dans cette période
+      </div>`}
+    </div>
+  </div>
+  <div class="rpt-card" style="margin-top:16px">
+    <div class="rpt-card-title">📋 État du stock par article</div>
+    <div class="table-scroll"><table><thead><tr>
+      <th>Article</th><th>Catégorie</th><th>Stock actuel</th><th>Seuil</th><th>Valeur</th><th>État</th>
+    </tr></thead><tbody>
+    ${[...artStats].sort((a,b)=>a.stock-b.stock).map(a=>{
+      const cat=getCat(a.catId);
+      const etat=a.stock===0?['badge-red','🔴 Rupture']:a.stock<=a.seuilAlerte?['badge-yellow','⚠️ Critique']:['badge-green','✅ Normal'];
+      return `<tr>
+        <td><strong>${esc(a.nom)}</strong><div style="font-size:10px;color:var(--text3)">${esc(a.ref||'')}</div></td>
+        <td><span class="badge badge-blue">${cat.icone} ${esc(cat.nom)}</span></td>
+        <td style="font-weight:700">${fmtNum(a.stock)} ${esc(a.unite||'')}</td>
+        <td style="color:var(--text3)">${fmtNum(a.seuilAlerte)} ${esc(a.unite||'')}</td>
+        <td>${fmt(a.stock*a.prixAchat)}</td>
+        <td><span class="badge ${etat[0]}">${etat[1]}</span></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>
+  </div>`;
+}
+
+// ── SUB: CLIENTS ─────────────────────────────────────
+function rptClients() {
+  const vF = rptVentesFiltered();
+  const clientCA = {};
+  vF.filter(v=>v.clientId&&v.clientId!=='').forEach(v=>{
+    clientCA[v.clientId]=(clientCA[v.clientId]||{id:v.clientId,nom:v.clientNom||'?',ca:0,nb:0});
+    clientCA[v.clientId].ca+=v.total; clientCA[v.clientId].nb++;
+  });
+  const topClients=Object.values(clientCA).sort((a,b)=>b.ca-a.ca).slice(0,10);
+  const caComptant=vF.filter(v=>!v.clientId||v.clientId==='').reduce((s,v)=>s+v.total,0);
+  const caClient=vF.filter(v=>v.clientId&&v.clientId!=='').reduce((s,v)=>s+v.total,0);
+  const caTotal=vF.reduce((s,v)=>s+v.total,0);
+
+  return `
+  <div class="kpi-grid" style="margin-bottom:16px">
+    <div class="kpi" style="--kpi-c:#7c5cff"><div class="kpi-icon">👥</div>
+      <div class="kpi-val">${clients.length}</div><div class="kpi-lbl">Clients enregistrés</div></div>
+    <div class="kpi" style="--kpi-c:#2b6ef0"><div class="kpi-icon">🏆</div>
+      <div class="kpi-val">${Object.keys(clientCA).length}</div><div class="kpi-lbl">Clients actifs (période)</div></div>
+    <div class="kpi" style="--kpi-c:#10a861"><div class="kpi-icon">💳</div>
+      <div class="kpi-val">${fmt(caClient)}</div><div class="kpi-lbl">CA clients nommés</div></div>
+    <div class="kpi" style="--kpi-c:#f97316"><div class="kpi-icon">🪙</div>
+      <div class="kpi-val">${fmt(caComptant)}</div><div class="kpi-lbl">CA ventes comptant</div></div>
+  </div>
+  <div class="rpt-card">
+    <div class="rpt-card-title">🏆 Top clients par chiffre d'affaires</div>
+    ${topClients.length===0?`<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">Aucune vente client dans cette période</div></div>`:`
+    <div class="table-scroll"><table><thead><tr>
+      <th>#</th><th>Client</th><th>Nb ventes</th><th>CA total</th><th>Panier moy.</th><th>Part CA</th>
+    </tr></thead><tbody>
+    ${topClients.map((cl,i)=>{
+      const pct=caTotal?((cl.ca/caTotal)*100).toFixed(1):0;
+      return `<tr>
+        <td><strong style="font-size:16px;color:var(--text3)">${i+1}</strong></td>
+        <td><div style="font-weight:700">${esc(cl.nom)}</div></td>
+        <td>${cl.nb}</td>
+        <td style="font-weight:700;color:var(--green)">${fmt(cl.ca)}</td>
+        <td>${fmt(cl.ca/cl.nb)}</td>
+        <td><div style="display:flex;align-items:center;gap:6px">
+          <div style="width:60px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px">${pct}%</span>
+        </div></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`}
+  </div>
+  <div class="rpt-card">
+    <div class="rpt-card-title">📋 Fiche clients complète</div>
+    <div class="table-scroll"><table><thead><tr>
+      <th>Nom</th><th>Téléphone</th><th>Solde crédit</th><th>Nb ventes</th><th>CA total</th>
+    </tr></thead><tbody>
+    ${clients.map(cl=>{
+      const ventesClient=vF.filter(v=>v.clientId===cl.id);
+      const caC=ventesClient.reduce((s,v)=>s+v.total,0);
+      const credit=cl.solde||0;
+      return `<tr>
+        <td><strong>${esc(cl.nom)}</strong></td>
+        <td>${esc(cl.tel||'—')}</td>
+        <td style="font-weight:700;color:${credit>0?'var(--red)':'var(--green)'}">${credit>0?'-'+fmt(credit):fmt(0)}</td>
+        <td>${ventesClient.length}</td>
+        <td style="font-weight:700;color:var(--green)">${fmt(caC)}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>
+  </div>`;
+}
+
+// ── SUB: JOURNAL ─────────────────────────────────────
+function rptJournal() {
+  const vF=[...rptVentesFiltered()].sort((a,b)=>b.createdAt-a.createdAt);
+  const eF=[...entrees].filter(e=>(!rptDebut||e.date>=rptDebut)&&(!rptFin||e.date<=rptFin));
+  const sF=[...sorties].filter(s=>(!rptDebut||s.date>=rptDebut)&&(!rptFin||s.date<=rptFin));
+  const tF=[...transferts].filter(t=>(!rptDebut||t.date>=rptDebut)&&(!rptFin||t.date<=rptFin));
+
+  // Fusionner tous les mouvements
+  const all=[
+    ...vF.map(v=>({type:'vente',   icon:'🛒',label:'Vente',       date:v.date,at:v.createdAt,desc:v.clientNom||'Comptant',montant:v.total,sign:'+',id:v.id,color:'var(--green)'})),
+    ...eF.map(e=>({type:'entree',  icon:'📥',label:'Entrée stock', date:e.date,at:e.createdAt,desc:articles.find(a=>a.id===e.artId)?.nom||e.artId,montant:e.total||0,sign:'+',id:e.id,color:'var(--blue)'})),
+    ...sF.map(s=>({type:'sortie',  icon:'📤',label:'Sortie stock', date:s.date,at:s.createdAt,desc:articles.find(a=>a.id===s.artId)?.nom||s.artId,montant:0,sign:'-',id:s.id,color:'var(--red)'})),
+    ...tF.map(t=>({type:'transfert',icon:'🔄',label:'Transfert',  date:t.date,at:t.createdAt,desc:`→ ${sites.find(s=>s.id===t.toSiteId)?.nom||t.toSiteId}`,montant:0,sign:'↔',id:t.id,color:'var(--purple)'})),
+  ].sort((a,b)=>b.at-a.at);
+
+  return `
+  <div class="kpi-grid" style="margin-bottom:16px">
+    <div class="kpi" style="--kpi-c:#10a861"><div class="kpi-icon">🛒</div><div class="kpi-val">${vF.length}</div><div class="kpi-lbl">Ventes</div></div>
+    <div class="kpi" style="--kpi-c:#2b6ef0"><div class="kpi-icon">📥</div><div class="kpi-val">${eF.length}</div><div class="kpi-lbl">Entrées stock</div></div>
+    <div class="kpi" style="--kpi-c:#e53e3e"><div class="kpi-icon">📤</div><div class="kpi-val">${sF.length}</div><div class="kpi-lbl">Sorties stock</div></div>
+    <div class="kpi" style="--kpi-c:#7c5cff"><div class="kpi-icon">🔄</div><div class="kpi-val">${tF.length}</div><div class="kpi-lbl">Transferts</div></div>
+  </div>
+  <div class="rpt-card">
+    <div class="rpt-card-title">📋 Journal complet des opérations
+      <span style="margin-left:auto;font-size:11px;color:var(--text3);font-weight:500">${all.length} opération(s)</span>
+      <button class="btn btn-ghost btn-sm no-print" style="margin-left:8px" onclick="exportJournalCSV()">⬇️ Export CSV</button>
+    </div>
+    <div class="table-scroll"><table><thead><tr>
+      <th>Type</th><th>Date & heure</th><th>Description</th><th>Montant</th>
+    </tr></thead><tbody>
+    ${all.map(op=>`<tr>
+      <td><span class="badge" style="background:${op.color}18;color:${op.color};border:1px solid ${op.color}30">
+        ${op.icon} ${op.label}
+      </span></td>
+      <td>${fmtDate(op.date)}<div style="font-size:10px;color:var(--text3)">${new Date(op.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div></td>
+      <td>${esc(op.desc)}</td>
+      <td style="font-weight:700;color:${op.color}">${op.sign} ${op.montant?fmt(op.montant):'—'}</td>
+    </tr>`).join('')}
+    </tbody></table></div>
+  </div>`;
+}
+
+// ── Export CSV journal ────────────────────────────────
+function exportJournalCSV() {
+  const vF=rptVentesFiltered();
+  const rows=[['Type','Date','Heure','Description','Montant']];
+  [...vF].sort((a,b)=>b.createdAt-a.createdAt).forEach(v=>{
+    rows.push(['Vente',v.date,new Date(v.createdAt).toLocaleTimeString('fr-FR'),v.clientNom||'Comptant',v.total]);
+  });
+  const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=`journal_${today()}.csv`;
+  a.click();
+}
+
+// ── PAGE PRINCIPALE ───────────────────────────────────
+function pageRapports(c, ta) {
+  // Initialiser la période par défaut
+  if (!rptDebut) { const d=new Date(); d.setDate(d.getDate()-29); rptDebut=d.toISOString().slice(0,10); rptFin=today(); }
+
+  ta.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="printRapportJournee()">🖨️ Journalier</button>
+    </div>`;
+
+  c.innerHTML = `
+  <style>
+    .rpt-toolbar{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .rpt-periods{display:flex;gap:4px;flex-wrap:wrap}
+    .rpt-period-btn{padding:7px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--card2);color:var(--text2);font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+    .rpt-period-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .rpt-period-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .rpt-custom{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .rpt-custom input{padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:12.5px;outline:none;width:136px;font-family:'DM Sans',sans-serif}
+    .rpt-custom input:focus{border-color:var(--accent)}
+    .rpt-tabs{display:flex;gap:4px;flex-wrap:wrap;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:5px;margin-bottom:16px}
+    .rpt-tab-btn{flex:1;min-width:0;padding:9px 10px;border:none;background:transparent;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .18s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+    .rpt-tab-btn:hover{background:var(--card);color:var(--text)}
+    .rpt-tab-btn.active{background:var(--card);color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.07)}
+    @media(max-width:600px){.rpt-tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.rpt-tab-btn{white-space:nowrap}}
+  </style>
+
+  <!-- Barre de filtres date -->
+  <div class="rpt-toolbar">
+    <div class="rpt-periods">
+      <button class="rpt-period-btn ${rptPeriode==='today'?'active':''}" onclick="setPeriode('today',this)">Aujourd'hui</button>
+      <button class="rpt-period-btn ${rptPeriode==='7j'?'active':''}"    onclick="setPeriode('7j',this)">7 jours</button>
+      <button class="rpt-period-btn ${rptPeriode==='30j'?'active':''}"   onclick="setPeriode('30j',this)">30 jours</button>
+      <button class="rpt-period-btn ${rptPeriode==='3m'?'active':''}"    onclick="setPeriode('3m',this)">3 mois</button>
+      <button class="rpt-period-btn ${rptPeriode==='12m'?'active':''}"   onclick="setPeriode('12m',this)">12 mois</button>
+      <button class="rpt-period-btn ${rptPeriode==='tout'?'active':''}"  onclick="setPeriode('tout',this)">Tout</button>
+    </div>
+    <div class="rpt-custom">
+      <span style="font-size:12px;color:var(--text3);font-weight:600">Du</span>
+      <input type="date" id="rpt-date-debut" value="${rptDebut}" onchange="applyCustomRange()">
+      <span style="font-size:12px;color:var(--text3);font-weight:600">au</span>
+      <input type="date" id="rpt-date-fin"   value="${rptFin}"   onchange="applyCustomRange()">
+    </div>
+    <span style="font-size:11.5px;color:var(--text3);margin-left:auto">
+      📍 ${esc(getCurrentSite().nom)}
+    </span>
+  </div>
+
+  <!-- Onglets sous-modules -->
+  <div class="rpt-tabs">
+    <button class="rpt-tab-btn ${rptTab==='vue'?'active':''}"     onclick="switchRptTab('vue',this)">📊 Vue d'ensemble</button>
+    <button class="rpt-tab-btn ${rptTab==='ventes'?'active':''}"  onclick="switchRptTab('ventes',this)">🛒 Ventes</button>
+    <button class="rpt-tab-btn ${rptTab==='stock'?'active':''}"   onclick="switchRptTab('stock',this)">📦 Stock</button>
+    <button class="rpt-tab-btn ${rptTab==='clients'?'active':''}" onclick="switchRptTab('clients',this)">👥 Clients</button>
+    <button class="rpt-tab-btn ${rptTab==='journal'?'active':''}" onclick="switchRptTab('journal',this)">🗒️ Journal</button>
+  </div>
+
+  <!-- Zone de contenu dynamique -->
+  <div id="rpt-content"></div>
+  `;
+
+  // Rendre l'onglet actif
+  rptRenderTab(rptTab);
 }
 
 // ═══════════════════════════════════════════════════════
