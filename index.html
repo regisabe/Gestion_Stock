@@ -1299,7 +1299,213 @@
       padding-bottom: max(8px, env(safe-area-inset-bottom));
     }
   }
+
+  /* Scanner overlay */
+  #scanner-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(8px);
+  }
+  #scanner-overlay.active { display: flex; }
+  #scanner-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  #scanner-ui {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 420px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+  #scanner-ctx-label {
+    width: 100%;
+    text-align: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  }
+  #scanner-box {
+    position: relative;
+    width: min(82vw, 320px);
+    aspect-ratio: 1 / 1;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 24px 60px rgba(2, 8, 23, 0.42);
+    overflow: hidden;
+  }
+  #scanner-box.success {
+    animation: scannerPulse 0.35s ease;
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.55);
+  }
+  .sc-corner {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border-color: #7dd3fc;
+    border-style: solid;
+    border-width: 0;
+    filter: drop-shadow(0 0 10px rgba(125, 211, 252, 0.55));
+  }
+  .sc-tl {
+    top: 14px;
+    left: 14px;
+    border-top-width: 4px;
+    border-left-width: 4px;
+    border-top-left-radius: 16px;
+  }
+  .sc-tr {
+    top: 14px;
+    right: 14px;
+    border-top-width: 4px;
+    border-right-width: 4px;
+    border-top-right-radius: 16px;
+  }
+  .sc-bl {
+    bottom: 14px;
+    left: 14px;
+    border-bottom-width: 4px;
+    border-left-width: 4px;
+    border-bottom-left-radius: 16px;
+  }
+  .sc-br {
+    right: 14px;
+    bottom: 14px;
+    border-right-width: 4px;
+    border-bottom-width: 4px;
+    border-bottom-right-radius: 16px;
+  }
+  #scanner-laser {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 50%;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, #fb7185, transparent);
+    box-shadow: 0 0 18px rgba(251, 113, 133, 0.95);
+    animation: scannerLaser 1.8s linear infinite;
+  }
+  #scanner-controls {
+    width: 100%;
+    padding: 18px;
+    border-radius: 22px;
+    background: rgba(15, 23, 42, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 48px rgba(2, 8, 23, 0.32);
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .scanner-btns {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .sc-btn {
+    flex: 1 1 140px;
+    min-height: 44px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .sc-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+  }
+  #torch-btn {
+    background: rgba(43, 110, 240, 0.48);
+  }
+  #scanner-manual-wrap {
+    width: 100%;
+  }
+  #scanner-manual {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+  }
+  #scanner-manual:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 4px rgba(79, 140, 255, 0.16);
+  }
+  #scanner-manual::placeholder {
+    color: #64748b;
+  }
+  @keyframes scannerLaser {
+    0% {
+      transform: translateY(-90px);
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(90px);
+      opacity: 0.35;
+    }
+  }
+  @keyframes scannerPulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @media (max-width: 640px) {
+    #scanner-overlay {
+      padding: 18px;
+    }
+    #scanner-ctx-label {
+      font-size: 22px;
+    }
+    #scanner-controls {
+      padding: 14px;
+    }
+    .sc-btn {
+      flex-basis: calc(50% - 5px);
+    }
+  }
 </style>
+  <!-- Scanner code-barres + Génération -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js" defer></script>
+  <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js" defer></script>
 </head>
 <body>
 
@@ -2316,6 +2522,18 @@ function articleFormHtml(a={}) {
   <div class="form-row">
     <div class="form-group"><label>Stock actuel (${getCurrentSite().nom})</label><input id="f-qte" type="number" min="0" value="${getStock(a)}"></div>
     <div class="form-group"><label>Seuil d'alerte</label><input id="f-seuil" type="number" min="0" value="${a.seuilAlerte||5}"></div>
+  </div>
+  <div class="form-group">
+    <label>Code-barres (EAN-13, Code128, QR...)</label>
+    <div style="display:flex;gap:8px;align-items:flex-start">
+      <div style="flex:1">
+        <input id="f-barcode" value="${esc(a.barcode||'')}" placeholder="Ex: 3760168930016" oninput="previewBarcode(this.value)">
+        <div id="barcode-preview" class="${a.barcode?'barcode-preview-wrap':''}" style="margin-top:${a.barcode?'8':'0'}px">
+          ${a.barcode ? '<svg id="bc-prev-svg"></svg>' : ''}
+        </div>
+      </div>
+      <button class="scan-btn" onclick="scanArticleBarcode()" title="Scanner avec la caméra">📷</button>
+    </div>
   </div>`;
 }
 
@@ -2330,6 +2548,7 @@ function getArticleFormData() {
     unite: document.getElementById('f-unite').value.trim() || 'pcs',
     qte: +document.getElementById('f-qte').value,
     seuilAlerte: +document.getElementById('f-seuil').value,
+    barcode: (document.getElementById('f-barcode')?.value||'').trim() || undefined,
   };
 }
 
@@ -3116,6 +3335,7 @@ function pageVentes(c, ta) {
       <div class="filter-bar">
         <div class="search-bar" style="max-width:none;flex:1"><span>🔍</span>
           <input id="pos-search" placeholder="Rechercher un article..." oninput="filterPOS()">
+          <button class="scan-btn" onclick="scanPOS()" title="Scanner avec la caméra" style="margin-left:6px">📷</button>
         </div>
         <select class="filter-select" id="pos-cat" onchange="filterPOS()">
           <option value="">Toutes catégories</option>
@@ -6268,6 +6488,251 @@ function checkStockNotifs() {
 }
 
 
+
+// ══════════════════════════════════════════════════════
+//  SCANNER CODE-BARRES
+// ══════════════════════════════════════════════════════
+let _scanCb       = null;   // callback on scan result
+let _zxingReader  = null;   // ZXing reader instance
+let _scanStream   = null;   // MediaStream
+let _torchTrack   = null;   // camera track for torch
+let _scanInterval = null;   // BarcodeDetector interval
+
+// Ouvrir le scanner
+async function openScanner(contextLabel, callback) {
+  _scanCb = callback;
+  document.getElementById('scanner-ctx-label').textContent = contextLabel || 'Scanner un code-barres';
+  document.getElementById('scanner-overlay').classList.add('active');
+  document.getElementById('scanner-box').classList.remove('success');
+  document.getElementById('scanner-manual').value = '';
+  document.getElementById('torch-btn').style.display = 'none';
+
+  // Vérifier accès caméra
+  try {
+    const constraints = { video: { facingMode: { ideal:'environment' }, width:{ideal:1280}, height:{ideal:720} } };
+    _scanStream = await navigator.mediaDevices.getUserMedia(constraints);
+    const video = document.getElementById('scanner-video');
+    video.srcObject = _scanStream;
+    await video.play();
+
+    // Track pour la torche
+    _torchTrack = _scanStream.getVideoTracks()[0];
+    const caps = _torchTrack?.getCapabilities?.() || {};
+    if (caps.torch) document.getElementById('torch-btn').style.display = '';
+
+    // Choisir méthode de scan
+    if ('BarcodeDetector' in window) {
+      await _startNativeDetector();
+    } else {
+      await _startZXing();
+    }
+  } catch(e) {
+    console.warn('Scanner:', e);
+    // Pas de caméra — mode manuel seulement
+    document.getElementById('scanner-video').style.display = 'none';
+    document.getElementById('scanner-laser').style.display = 'none';
+    document.getElementById('scanner-manual').focus();
+    toast('Caméra indisponible — saisie manuelle activée', 'warn');
+  }
+}
+
+// BarcodeDetector natif (Chrome/Android)
+async function _startNativeDetector() {
+  const formats = ['ean_13','ean_8','qr_code','code_128','code_39','upc_a','upc_e','codabar','itf'];
+  const supported = await BarcodeDetector.getSupportedFormats().catch(()=>formats);
+  const detector = new BarcodeDetector({ formats: supported.filter(f=>formats.includes(f)) });
+  const video = document.getElementById('scanner-video');
+
+  async function detect() {
+    if (!document.getElementById('scanner-overlay').classList.contains('active')) return;
+    try {
+      const results = await detector.detect(video);
+      if (results.length > 0) { onScanResult(results[0].rawValue); return; }
+    } catch {}
+    _scanInterval = requestAnimationFrame(detect);
+  }
+  _scanInterval = requestAnimationFrame(detect);
+}
+
+// ZXing (fallback iOS + Firefox)
+async function _startZXing() {
+  if (!window.ZXing) {
+    try {
+      await _loadScript('https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js');
+    } catch { toast('Scanner non disponible sur cet appareil','error'); return; }
+  }
+  _zxingReader = new ZXing.BrowserMultiFormatReader();
+  const video = document.getElementById('scanner-video');
+  // ZXing gère son propre cycle de détection
+  _zxingReader.decodeFromVideoElement(video, (result, err) => {
+    if (result) onScanResult(result.getText());
+  });
+}
+
+// Résultat du scan
+function onScanResult(code) {
+  if (!code || !_scanCb) return;
+  // Feedback visuel
+  const box = document.getElementById('scanner-box');
+  box.classList.add('success');
+  vibrate([30,10,30]);
+  // Fermer après un court délai
+  setTimeout(() => {
+    closeScanner();
+    toast('✅ Code scanné : ' + code);
+    _scanCb(code);
+    _scanCb = null;
+  }, 300);
+}
+
+// Fermer le scanner
+function closeScanner() {
+  document.getElementById('scanner-overlay').classList.remove('active');
+  document.getElementById('scanner-video').style.display = '';
+  document.getElementById('scanner-laser').style.display = '';
+  if (_scanInterval) { cancelAnimationFrame(_scanInterval); _scanInterval = null; }
+  if (_zxingReader) { _zxingReader.reset(); _zxingReader = null; }
+  if (_scanStream) { _scanStream.getTracks().forEach(t=>t.stop()); _scanStream = null; }
+  _torchTrack = null;
+}
+
+// Torche/Flash
+async function toggleTorch() {
+  if (!_torchTrack) return;
+  const settings = _torchTrack.getSettings();
+  await _torchTrack.applyConstraints({ advanced:[{ torch: !settings.torch }] });
+  document.getElementById('torch-btn').textContent = settings.torch ? '🔦 Flash' : '💡 Flash ON';
+}
+
+function _loadScript(url) {
+  return new Promise((ok, ko) => {
+    const s = document.createElement('script');
+    s.src = url; s.onload = ok; s.onerror = ko;
+    document.head.appendChild(s);
+  });
+}
+
+// ── Trouver un article par code-barres ───────────────
+function findArticleByCode(code) {
+  const c = code.trim().toLowerCase();
+  return articles.find(a =>
+    a.barcode === code ||
+    a.ref?.toLowerCase() === c ||
+    a.nom?.toLowerCase() === c
+  ) || null;
+}
+
+// ══════════════════════════════════════════════════════
+//  GÉNÉRATION CODE-BARRES (JsBarcode)
+// ══════════════════════════════════════════════════════
+function renderBarcode(svgEl, code, options={}) {
+  if (!code || !window.JsBarcode) return;
+  try {
+    JsBarcode(svgEl, code, {
+      format: 'AUTO', width: 1.8, height: 55,
+      displayValue: true, fontSize: 12,
+      margin: 6, background: 'transparent',
+      lineColor: 'var(--text, #1e293b)',
+      ...options
+    });
+  } catch(e) { console.warn('Barcode render:', e); }
+}
+
+function previewBarcode(code) {
+  const wrap = document.getElementById('barcode-preview');
+  if (!wrap) return;
+  if (!code || !code.trim()) { wrap.innerHTML=''; return; }
+  wrap.innerHTML = '<svg id="bc-prev-svg"></svg>';
+  if (window.JsBarcode) {
+    renderBarcode(document.getElementById('bc-prev-svg'), code.trim());
+  } else {
+    setTimeout(() => {
+      if (window.JsBarcode) renderBarcode(document.getElementById('bc-prev-svg'), code.trim());
+    }, 800);
+  }
+}
+
+// ── Imprimer une étiquette code-barres ───────────────
+function printBarcodeLabel(artId) {
+  const a = articles.find(x=>x.id===artId);
+  if (!a?.barcode) { toast("Cet article n'a pas de code-barres. Ajoutez-en un dans la fiche.",'error'); return; }
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  if (window.JsBarcode) {
+    JsBarcode(svg, a.barcode, { format:'AUTO', width:2, height:60, displayValue:true, fontSize:12, margin:8 });
+  }
+  printZone(`
+    <div style="display:inline-block;border:1px solid #ddd;border-radius:8px;padding:12px 16px;text-align:center;font-family:Arial,sans-serif;min-width:180px">
+      <div style="font-size:11px;font-weight:800;margin-bottom:4px;text-transform:uppercase">${esc(a.nom)}</div>
+      ${a.ref?`<div style="font-size:9px;color:#666;margin-bottom:6px">Réf: ${esc(a.ref)}</div>`:''}
+      ${svg.outerHTML}
+      <div style="font-size:13px;font-weight:900;margin-top:6px">${fmt(a.prix)} ${config.devise||'FCFA'}</div>
+    </div>
+  `);
+}
+
+// ══════════════════════════════════════════════════════
+//  INTÉGRATIONS
+// ══════════════════════════════════════════════════════
+
+// ── POS : scanner pour ajouter au panier ─────────────
+function scanPOS() {
+  openScanner('Scannez un article pour ajouter au panier', code => {
+    const a = findArticleByCode(code);
+    if (!a) { toast('Aucun article trouvé pour ce code : '+code, 'error'); return; }
+    if (getStock(a) <= 0) { toast(a.nom+' : stock épuisé', 'warn'); return; }
+    addToCart(a.id);
+  });
+}
+
+// ── Entrée stock : scanner pour pré-sélectionner ─────
+function scanEntreeArt() {
+  openScanner('Scannez l\'article entré en stock', code => {
+    const a = findArticleByCode(code);
+    if (!a) { toast('Article non trouvé : '+code, 'error'); return; }
+    const sel = document.getElementById('se-art');
+    if (sel) { sel.value=a.id; sel.dispatchEvent(new Event('change')); }
+    toast('Article sélectionné : '+a.nom);
+  });
+}
+
+// ── Sortie stock : scanner pour pré-sélectionner ─────
+function scanSortieArt() {
+  openScanner('Scannez l\'article sorti du stock', code => {
+    const a = findArticleByCode(code);
+    if (!a) { toast('Article non trouvé : '+code, 'error'); return; }
+    const sel = document.getElementById('ss-art');
+    if (sel) { sel.value=a.id; sel.dispatchEvent(new Event('change')); }
+    toast('Article sélectionné : '+a.nom);
+  });
+}
+
+// ── Inventaire : scanner pour scroller vers l'article ─
+function scanInventaireArt() {
+  openScanner('Scannez un article pour l\'inventaire', code => {
+    const a = findArticleByCode(code);
+    if (!a) { toast('Article non trouvé : '+code, 'error'); return; }
+    const row = document.getElementById('inv-row-'+a.id);
+    if (row) {
+      row.scrollIntoView({behavior:'smooth', block:'center'});
+      row.style.background='rgba(43,110,240,.12)';
+      setTimeout(()=>{ row.style.background=''; }, 1500);
+      const inp = document.getElementById('inv-'+a.id);
+      if (inp) inp.focus();
+    } else {
+      toast('Article trouvé : '+a.nom+' — '+getStock(a)+' '+a.unite+' en stock');
+    }
+  });
+}
+
+// ── Fiche article : scanner le code-barres ───────────
+function scanArticleBarcode() {
+  openScanner("Scanner le code-barres de l'article", code => {
+    const inp = document.getElementById('f-barcode');
+    if (inp) { inp.value = code; previewBarcode(code); }
+  });
+}
+
+
 // ─── INIT ────────────────────────────────────────────────────────────────────
 users = normalizeUsers(users);
 save('users', users);
@@ -6552,5 +7017,34 @@ function applyUpdate() {
   window.location.reload();
 }
 </script>
+
+<!-- ══ SCANNER CODE-BARRES ══ -->
+<div id="scanner-overlay">
+  <video id="scanner-video" autoplay playsinline muted></video>
+  <div id="scanner-ui">
+    <div id="scanner-ctx-label">Scanner un code-barres</div>
+    <div id="scanner-box">
+      <div class="sc-corner sc-tl"></div>
+      <div class="sc-corner sc-tr"></div>
+      <div class="sc-corner sc-bl"></div>
+      <div class="sc-corner sc-br"></div>
+      <div id="scanner-laser"></div>
+    </div>
+    <div id="scanner-controls">
+      <div class="scanner-btns">
+        <button class="sc-btn" id="torch-btn" onclick="toggleTorch()" style="display:none">🔦 Flash</button>
+        <button class="sc-btn" onclick="closeScanner()">✕ Fermer</button>
+      </div>
+      <div id="scanner-manual-wrap">
+        <input id="scanner-manual" type="text" placeholder="Ou saisir le code manuellement..."
+          onkeydown="if(event.key==='Enter'&&this.value.trim()){onScanResult(this.value.trim());this.value=''}">
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);text-align:center">
+        Appuyez sur Entrée après saisie manuelle
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
