@@ -713,6 +713,25 @@
 
 
 
+  /* ── PROFILE DROPDOWN ── */
+  .prof-dd-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    transition: all 0.12s;
+  }
+  .prof-dd-item:hover { background: var(--accent-glow); color: var(--accent); }
+  .prof-dd-item.active { background: var(--accent-glow); color: var(--accent); font-weight: 600; }
+  .prof-dd-item.danger { color: var(--red); }
+  .prof-dd-item.danger:hover { background: var(--red-bg); color: var(--red); }
+  .prof-dd-item > span:first-child { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+  .prof-dd-divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .prof-dd-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); padding: 6px 14px 2px; }
+
   /* Site dropdown */
   .site-dropdown {
     position: absolute;
@@ -1322,6 +1341,7 @@
     .pos-right {
       position: fixed; inset: 56px 0 calc(64px + env(safe-area-inset-bottom,0px)) 0;
       z-index: 50; border-radius: 0; display: none; flex-direction: column;
+      overflow: hidden;
     }
     .pos-right.mobile-active { display: flex; }
     .pos-left.mobile-hidden { display: none; }
@@ -2033,45 +2053,150 @@ function updateNavigationVisibility() {
 function renderSessionActions(container) {
   if (!container || !currentUser) return;
   const site = getCurrentSite();
-  const siteSwitcher = sites.length > 1
-    ? `<div style="position:relative">
-        <button class="btn btn-ghost" id="topbar-site-badge" onclick="toggleSiteDropdown()" style="gap:6px;padding:7px 12px">
-          ${site.icone || '🏪'} <span class="site-badge-name">${site.nom}</span> <span style="font-size:10px;color:var(--text3)">▾</span>
-        </button>
-        <div id="site-dropdown" class="site-dropdown hidden">
-          ${sites.map(s => `
-            <div class="site-dd-item ${s.id===currentSiteId?'active':''}" onclick="switchSite('${s.id}');toggleSiteDropdown()">
-              <span>${s.icone||'🏪'}</span>
-              <div>
-                <div style="font-size:13px;font-weight:600">${esc(s.nom)}</div>
-                <div style="font-size:11px;color:var(--text3)">${s.type==='entrepot'?'Entrepôt':'Magasin'}</div>
-              </div>
-              ${s.id===currentSiteId?'<span style="color:var(--accent);font-size:14px;margin-left:auto">✓</span>':''}
-            </div>
-          `).join('')}
-        </div>
-      </div>`
-    : `<div id="topbar-site-badge" style="font-size:12px;color:var(--text3);padding:6px 10px;border-radius:8px;background:var(--card2)">${site.icone||'🏪'} ${site.nom}</div>`;
+  const initiales = currentUser.nom.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const couleurRole = currentUser.role==='Admin' ? '#1a56db' : currentUser.role==='Caissier' ? '#10a861' : '#7c5cff';
+
+  // Construire les options de site pour le sous-menu
+  const siteOptions = sites.length > 1
+    ? `<div class="prof-dd-divider"></div>
+       <div class="prof-dd-label">Changer de site</div>
+       ${sites.map(s => `
+         <div class="prof-dd-item ${s.id===currentSiteId?'active':''}" onclick="switchSite('${s.id}');closeProfileDropdown()">
+           <span>${s.icone||'🏪'}</span>
+           <span>${esc(s.nom)}</span>
+           ${s.id===currentSiteId?'<span style="color:var(--accent);margin-left:auto">✓</span>':''}
+         </div>`).join('')}`
+    : '';
 
   container.insertAdjacentHTML('beforeend', `
-    <div class="session-actions">
-      ${siteSwitcher}
-      <div class="session-chip">
-        <span class="session-chip-name">${esc(currentUser.nom)}</span>
-        <span class="session-chip-role">${esc(currentUser.role)}</span>
-      </div>
-      <button id="dark-toggle" onclick="toggleDark()" title="Mode sombre"
-  style="background:none;border:none;cursor:pointer;font-size:18px;width:36px;height:36px;
-  border-radius:8px;display:flex;align-items:center;justify-content:center;
-  color:var(--text2);transition:all .15s;" aria-label="Changer le thème">🌙</button>
-<div id="net-indicator" title="Statut réseau" style="width:9px;height:9px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;transition:all .4s;flex-shrink:0;" ></div>
-      <button class="btn btn-ghost" onclick="openSyncModal()" title="Synchroniser" style="display:flex;align-items:center;gap:5px;font-size:13px">
-        ☁ <span class="btn-label">Sync</span>
+    <div id="net-indicator" title="Statut réseau" style="width:9px;height:9px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;transition:all .4s;flex-shrink:0;"></div>
+    <div style="position:relative">
+      <button id="profile-btn" onclick="toggleProfileDropdown()" aria-label="Profil"
+        style="display:flex;align-items:center;gap:8px;background:none;border:1.5px solid var(--border);
+        border-radius:50px;padding:5px 10px 5px 5px;cursor:pointer;transition:all .15s;
+        font-family:'DM Sans',sans-serif;">
+        <div style="width:32px;height:32px;border-radius:50%;background:${couleurRole};
+          display:flex;align-items:center;justify-content:center;
+          font-size:12px;font-weight:800;color:#fff;flex-shrink:0;">${initiales}</div>
+        <span style="font-size:13px;font-weight:600;color:var(--text);max-width:100px;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:none" class="profile-name-desktop">${esc(currentUser.nom)}</span>
+        <span style="font-size:10px;color:var(--text3)">▾</span>
       </button>
-      <button class="btn btn-ghost" onclick="switchCompany()" title="Changer de boutique">🏪</button>
-      <button class="btn btn-ghost" onclick="logout()">Se déconnecter</button>
+
+      <div id="profile-dropdown" style="display:none;position:absolute;top:calc(100% + 8px);right:0;
+        background:var(--card);border:1px solid var(--border);border-radius:14px;
+        min-width:240px;box-shadow:0 12px 40px rgba(0,0,0,.12);z-index:500;
+        overflow:hidden;animation:dropIn .15s ease;">
+
+        <!-- En-tête profil -->
+        <div style="padding:14px 16px;background:var(--card2);border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:40px;height:40px;border-radius:50%;background:${couleurRole};
+              display:flex;align-items:center;justify-content:center;
+              font-size:15px;font-weight:800;color:#fff;flex-shrink:0;">${initiales}</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--text)">${esc(currentUser.nom)}</div>
+              <div style="font-size:11px;color:var(--text3)">${esc(currentUser.role)}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="padding:6px">
+          <div class="prof-dd-item" onclick="openChangePassword();closeProfileDropdown()">
+            <span>🔑</span><span>Changer mot de passe</span>
+          </div>
+          <div class="prof-dd-item" onclick="openSyncModal();closeProfileDropdown()">
+            <span>☁</span><span>Synchroniser</span>
+          </div>
+          <div class="prof-dd-item" onclick="toggleDark();closeProfileDropdown()">
+            <span id="prof-theme-icon">🌙</span><span id="prof-theme-label">Changer de thème</span>
+          </div>
+          ${siteOptions}
+          <div class="prof-dd-divider"></div>
+          <div class="prof-dd-item" onclick="switchCompany();closeProfileDropdown()">
+            <span>🏪</span><span>Changer de boutique</span>
+          </div>
+          <div class="prof-dd-divider"></div>
+          <div class="prof-dd-item danger" onclick="logout()">
+            <span>🚪</span><span>Se déconnecter</span>
+          </div>
+        </div>
+      </div>
     </div>
   `);
+
+  // Afficher le nom sur desktop
+  if (window.innerWidth > 600) {
+    const nameEl = container.querySelector('.profile-name-desktop');
+    if (nameEl) nameEl.style.display = '';
+  }
+}
+
+function toggleProfileDropdown() {
+  const dd = document.getElementById('profile-dropdown');
+  if (!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    // Mettre à jour l'icône thème
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const icon = document.getElementById('prof-theme-icon');
+    const label = document.getElementById('prof-theme-label');
+    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+    if (label) label.textContent = isDark ? 'Mode clair' : 'Mode sombre';
+    // Fermer en cliquant ailleurs
+    setTimeout(() => {
+      document.addEventListener('click', function handler(e) {
+        if (!e.target.closest('#profile-dropdown') && !e.target.closest('#profile-btn')) {
+          closeProfileDropdown();
+        }
+        document.removeEventListener('click', handler);
+      });
+    }, 10);
+  }
+}
+
+function closeProfileDropdown() {
+  const dd = document.getElementById('profile-dropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function openChangePassword() {
+  if (!currentUser) return;
+  openModal('🔑 Changer mon mot de passe', `
+    <div class="form-group">
+      <label>Mot de passe actuel</label>
+      <input type="password" id="cp-old" placeholder="Mot de passe actuel">
+    </div>
+    <div class="form-group">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="cp-new" placeholder="Nouveau mot de passe (min. 4 caractères)">
+    </div>
+    <div class="form-group">
+      <label>Confirmer le nouveau mot de passe</label>
+      <input type="password" id="cp-confirm" placeholder="Répéter le nouveau mot de passe">
+    </div>
+    <div id="cp-msg" style="font-size:13px;margin-top:4px"></div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+    <button class="btn btn-primary" onclick="saveChangePassword()">✓ Confirmer</button>
+  `);
+}
+
+function saveChangePassword() {
+  const oldPw = document.getElementById('cp-old')?.value || '';
+  const newPw = document.getElementById('cp-new')?.value || '';
+  const confirmPw = document.getElementById('cp-confirm')?.value || '';
+  const msg = document.getElementById('cp-msg');
+  if (!oldPw || !newPw || !confirmPw) { if(msg) msg.innerHTML='<span style="color:var(--red)">⚠️ Tous les champs sont requis.</span>'; return; }
+  if (oldPw !== currentUser.password) { if(msg) msg.innerHTML='<span style="color:var(--red)">⚠️ Mot de passe actuel incorrect.</span>'; return; }
+  if (newPw.length < 4) { if(msg) msg.innerHTML='<span style="color:var(--red)">⚠️ Le nouveau mot de passe doit contenir au moins 4 caractères.</span>'; return; }
+  if (newPw !== confirmPw) { if(msg) msg.innerHTML='<span style="color:var(--red)">⚠️ Les mots de passe ne correspondent pas.</span>'; return; }
+  const u = users.find(u => u.id === currentUser.id);
+  if (u) { u.password = newPw; currentUser.password = newPw; save('users', users); }
+  closeModal();
+  toast('✅ Mot de passe modifié avec succès');
 }
 
 function toggleSiteDropdown() {
@@ -3746,9 +3871,11 @@ function pageVentes(c, ta) {
       <div class="cart-head" style="flex-direction:column;align-items:flex-start;gap:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
           <div style="display:flex;align-items:center;gap:8px">
-            <button class="btn btn-ghost btn-sm" id="btn-back-products"
+            <button class="btn btn-primary btn-sm" id="btn-back-products"
               onclick="switchPosTab('prod')"
-              style="display:none;padding:6px 10px;">← Produits</button>
+              style="display:none;padding:8px 14px;min-height:40px;font-size:13px;font-weight:700;border-radius:10px;background:var(--accent);color:#fff;border:none;gap:6px">
+              ← Produits
+            </button>
             <span>🛒 Commande <span id="cart-count" style="color:var(--accent)"></span></span>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="viderCart()">🗑️ Vider</button>
@@ -3875,8 +4002,13 @@ function switchPosTab(tab) {
       cart.classList.add('mobile-active');
       const fab = document.getElementById('fab-cart');
       if (fab) fab.classList.add('hidden');
+      // Afficher le bouton retour avec style bien visible
       const backBtn = document.getElementById('btn-back-products');
-      if (backBtn) backBtn.style.display = '';
+      if (backBtn) {
+        backBtn.style.display = 'flex';
+        backBtn.style.alignItems = 'center';
+        backBtn.style.gap = '6px';
+      }
       // Focus sur le premier champ du panier
       setTimeout(() => cart.querySelector('input, button')?.focus(), 100);
     } else {
