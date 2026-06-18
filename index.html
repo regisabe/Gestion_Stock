@@ -2396,101 +2396,276 @@ function dashboard(c, ta) {
 
 function pageArticles(c, ta) {
   ta.innerHTML = `
-    <div class="search-bar"><span>🔍</span><input placeholder="Rechercher un article..." oninput="searchVal=this.value;nav('articles')" value="${searchVal}"></div>
+    <div class="search-bar"><span>🔍</span><input placeholder="Rechercher un article..." oninput="searchVal=this.value;renderArticlesGrid()" value="${searchVal}"></div>
+    <button class="btn btn-ghost btn-sm" onclick="exportArticles()" title="Exporter CSV">⬇️ CSV</button>
     <button class="btn btn-primary" onclick="modalNouvelArticle()">+ Nouvel article</button>
   `;
-  let arts = getArticlesData();
-  if(searchVal) arts = arts.filter(a => a.nom.toLowerCase().includes(searchVal.toLowerCase()) || a.ref.toLowerCase().includes(searchVal.toLowerCase()));
 
   c.innerHTML = `
-  <div class="cat-pills">
-    <div class="cat-pill active" onclick="filterCat('')">Tous (${articles.length})</div>
-    ${categories.map(cat => `<div class="cat-pill" onclick="filterCat('${cat.id}')">${cat.icone} ${cat.nom} (${articles.filter(a=>a.catId===cat.id).length})</div>`).join('')}
-  </div>
-  <div class="table-container">
-    <div class="table-header">
-      <span class="table-title">📦 ${arts.length} article(s)</span>
-      <button class="btn btn-ghost btn-sm" onclick="exportArticles()">⬇️ Exporter CSV</button>
+  <style>
+    .arts-cat-bar {
+      display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;
+      padding-bottom:14px; border-bottom:1px solid var(--border);
+    }
+    .arts-cat-pill {
+      display:flex; align-items:center; gap:6px;
+      padding:6px 14px; border-radius:20px;
+      border:1.5px solid var(--border);
+      font-size:12px; font-weight:600;
+      cursor:pointer; transition:all .15s;
+      color:var(--text2); background:var(--card);
+    }
+    .arts-cat-pill:hover { border-color:var(--accent); color:var(--accent); }
+    .arts-cat-pill.active {
+      background:var(--accent); border-color:var(--accent);
+      color:#fff; box-shadow:0 4px 12px rgba(43,110,240,.25);
+    }
+    .arts-cat-pill .pill-count {
+      background:rgba(255,255,255,.25); color:inherit;
+      font-size:10px; font-weight:700;
+      padding:1px 6px; border-radius:10px;
+      min-width:18px; text-align:center;
+    }
+    .arts-cat-pill:not(.active) .pill-count {
+      background:var(--border); color:var(--text3);
+    }
+
+    .arts-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap:16px;
+    }
+    .art-card {
+      background:var(--card);
+      border:1.5px solid var(--border);
+      border-radius:16px;
+      overflow:hidden;
+      cursor:pointer;
+      transition:all .2s cubic-bezier(.16,1,.3,1);
+      position:relative;
+      display:flex; flex-direction:column;
+    }
+    .art-card:hover {
+      border-color:var(--accent);
+      transform:translateY(-3px);
+      box-shadow:0 10px 28px rgba(43,110,240,.1);
+    }
+    .art-card-img {
+      width:100%; height:140px;
+      object-fit:cover;
+      background:var(--card2);
+      display:flex; align-items:center; justify-content:center;
+      font-size:48px;
+      flex-shrink:0;
+    }
+    .art-card-img img {
+      width:100%; height:100%; object-fit:cover;
+    }
+    .art-card-body {
+      padding:14px 14px 12px;
+      flex:1; display:flex; flex-direction:column; gap:6px;
+    }
+    .art-card-ref {
+      font-size:10px; font-weight:700; letter-spacing:.8px;
+      text-transform:uppercase; color:var(--text3);
+    }
+    .art-card-name {
+      font-family:'Syne',sans-serif;
+      font-size:14px; font-weight:700;
+      color:var(--text); line-height:1.3;
+    }
+    .art-card-cat {
+      font-size:11px; color:var(--text3);
+    }
+    .art-card-prices {
+      display:flex; align-items:baseline; gap:6px; margin-top:2px;
+    }
+    .art-card-price {
+      font-family:'Syne',sans-serif;
+      font-size:16px; font-weight:800; color:var(--accent);
+    }
+    .art-card-pa {
+      font-size:11px; color:var(--text3); text-decoration:line-through;
+    }
+    .art-card-marge {
+      font-size:11px; font-weight:700;
+    }
+    .art-card-stock {
+      display:flex; align-items:center; gap:8px; margin-top:4px;
+    }
+    .art-card-gauge {
+      flex:1; height:5px; background:var(--border);
+      border-radius:3px; overflow:hidden;
+    }
+    .art-card-gauge-fill { height:100%; border-radius:3px; }
+    .art-card-qty { font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; }
+    .art-card-actions {
+      display:flex; gap:6px; padding:10px 14px;
+      border-top:1px solid var(--border);
+      background:var(--card2);
+    }
+    .art-card-actions .btn { flex:1; justify-content:center; }
+    .art-card-status {
+      position:absolute; top:10px; right:10px;
+      font-size:10px; font-weight:700; padding:3px 8px;
+      border-radius:10px;
+    }
+    .arts-empty {
+      grid-column:1/-1;
+      padding:60px 20px; text-align:center; color:var(--text3);
+    }
+    .arts-empty .empty-icon { font-size:52px; margin-bottom:14px; }
+    .arts-empty .empty-title { font-size:16px; font-weight:700; color:var(--text2); margin-bottom:6px; }
+    .arts-empty .empty-sub { font-size:13px; }
+
+    @media (max-width:768px) {
+      .arts-grid { grid-template-columns: repeat(2, 1fr); gap:10px; }
+      .art-card-img { height:110px; font-size:36px; }
+      .art-card-body { padding:10px 10px 8px; }
+      .art-card-name { font-size:13px; }
+      .art-card-price { font-size:14px; }
+    }
+    @media (max-width:400px) {
+      .arts-grid { grid-template-columns: 1fr 1fr; gap:8px; }
+    }
+  </style>
+
+  <div class="arts-cat-bar" id="arts-cat-bar">
+    <div class="arts-cat-pill active" onclick="filterCat('')" data-cat="">
+      Tous <span class="pill-count">${articles.length}</span>
     </div>
-    <div class="table-scroll"><table><thead><tr>
-      <th>Référence</th><th>Article</th><th>Catégorie</th><th>Stock</th><th>Prix achat</th><th>Prix vente</th><th>Marge</th><th>État</th><th>Actions</th>
-    </tr></thead><tbody>
-    ${arts.length===0?`<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-title">Aucun article</div></div></td></tr>`:''}
-    ${arts.map(a => {
-      const cat = getCat(a.catId);
-      const marge = a.prix - a.prixAchat;
-      const margePct = a.prixAchat ? Math.round(marge/a.prixAchat*100) : 0;
-      const qSite = getStock(a);
-      const etat = qSite === 0 ? ['badge-red','Rupture'] : qSite <= a.seuilAlerte ? ['badge-yellow','Critique'] : ['badge-green','Normal'];
-      return `<tr>
-        <td style="color:var(--text3);font-size:12px">${a.ref}</td>
-        <td><span style="margin-right:6px">${cat.icone}</span><strong>${a.nom}</strong></td>
-        <td><span class="badge badge-blue">${cat.nom}</span></td>
-        <td>
-          <div class="stock-gauge">
-            <div class="gauge-bar"><div class="gauge-fill" style="width:${Math.min(100,Math.round(qSite/(a.seuilAlerte*3||1)*100))}%;background:${qSite===0?'var(--red)':qSite<=a.seuilAlerte?'var(--yellow)':'var(--green)'}"></div></div>
-            <span class="gauge-val">${fmtNum(qSite)} <small style="color:var(--text3)">${a.unite}</small></span>
-          </div>
-        </td>
-        <td>${fmt(a.prixAchat)}</td>
-        <td style="font-weight:700">${fmt(a.prix)}</td>
-        <td style="color:${margePct>=20?'var(--green)':'var(--yellow)'}">+${margePct}%</td>
-        <td><span class="badge ${etat[0]}">${etat[1]}</span></td>
-        <td>
-          <button class="btn btn-ghost btn-sm" onclick="modalEditArticle('${a.id}')" title="Modifier">✏️</button>
-          <button class="btn btn-ghost btn-sm" onclick="deleteArticle('${a.id}')" title="Supprimer">🗑️</button>
-        </td>
-      </tr>`;
-    }).join('')}
-    </tbody></table></div>
-  </div>`;
+    ${categories.map(cat => `
+      <div class="arts-cat-pill" onclick="filterCat('${cat.id}')" data-cat="${cat.id}">
+        ${cat.icone} ${cat.nom}
+        <span class="pill-count">${articles.filter(a=>a.catId===cat.id).length}</span>
+      </div>`).join('')}
+  </div>
+
+  <div class="arts-grid" id="arts-grid"></div>
+  `;
+
+  renderArticlesGrid();
 }
+
+function renderArticlesGrid() {
+  const grid = document.getElementById('arts-grid');
+  if (!grid) return;
+  let arts = articles;
+  if (filterCatId) arts = arts.filter(a => a.catId === filterCatId);
+  if (searchVal) arts = arts.filter(a =>
+    a.nom.toLowerCase().includes(searchVal.toLowerCase()) ||
+    (a.ref||'').toLowerCase().includes(searchVal.toLowerCase())
+  );
+
+  if (!arts.length) {
+    grid.innerHTML = `<div class="arts-empty">
+      <div class="empty-icon">📦</div>
+      <div class="empty-title">Aucun article trouvé</div>
+      <div class="empty-sub">Modifiez votre recherche ou ajoutez un article</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = arts.map(a => {
+    const cat = getCat(a.catId);
+    const qSite = getStock(a);
+    const marge = a.prixAchat ? Math.round((a.prix - a.prixAchat) / a.prixAchat * 100) : 0;
+    const pct = Math.min(100, Math.round(qSite / (a.seuilAlerte * 3 || 1) * 100));
+    const stockColor = qSite === 0 ? 'var(--red)' : qSite <= a.seuilAlerte ? 'var(--yellow)' : 'var(--green)';
+    const statusCls = qSite === 0 ? 'badge badge-red' : qSite <= a.seuilAlerte ? 'badge badge-yellow' : 'badge badge-green';
+    const statusTxt = qSite === 0 ? 'Rupture' : qSite <= a.seuilAlerte ? 'Critique' : 'Normal';
+    const imgHtml = a.image
+      ? `<div class="art-card-img"><img src="${a.image}" alt="${esc(a.nom)}" loading="lazy"></div>`
+      : `<div class="art-card-img" style="background:linear-gradient(135deg,${cat.couleur||'#3b82f6'}18,${cat.couleur||'#3b82f6'}08)">${cat.icone}</div>`;
+    return `
+    <div class="art-card">
+      ${imgHtml}
+      <span class="art-card-status ${statusCls}">${statusTxt}</span>
+      <div class="art-card-body">
+        <div class="art-card-ref">${esc(a.ref||'')}</div>
+        <div class="art-card-name">${esc(a.nom)}</div>
+        <div class="art-card-cat">${cat.icone} ${cat.nom}</div>
+        <div class="art-card-prices">
+          <span class="art-card-price">${fmt(a.prix)}</span>
+          ${a.prixAchat ? `<span class="art-card-pa">${fmt(a.prixAchat)}</span>` : ''}
+          <span class="art-card-marge" style="color:${marge>=20?'var(--green)':'var(--yellow)'}">+${marge}%</span>
+        </div>
+        <div class="art-card-stock">
+          <div class="art-card-gauge"><div class="art-card-gauge-fill" style="width:${pct}%;background:${stockColor}"></div></div>
+          <span class="art-card-qty" style="color:${stockColor}">${fmtNum(qSite)} <small style="font-weight:400;color:var(--text3)">${a.unite}</small></span>
+        </div>
+      </div>
+      <div class="art-card-actions">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();modalEditArticle('${a.id}')">✏️ Modifier</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteArticle('${a.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function getArticlesData() { return articles; }
 
 let filterCatId = '';
 function filterCat(catId) {
   filterCatId = catId;
-  // Re-filter and re-render articles
-  const c = document.getElementById('content');
-  let arts = articles;
-  if(catId) arts = arts.filter(a=>a.catId===catId);
-  if(searchVal) arts = arts.filter(a => a.nom.toLowerCase().includes(searchVal.toLowerCase()));
-  c.querySelector('tbody').innerHTML = arts.map(a => {
-    const cat = getCat(a.catId);
-    const marge = a.prix - a.prixAchat;
-    const margePct = a.prixAchat ? Math.round(marge/a.prixAchat*100) : 0;
-    const qSite = getStock(a); // stock du site courant
-    const etat = qSite === 0 ? ['badge-red','Rupture'] : qSite <= a.seuilAlerte ? ['badge-yellow','Critique'] : ['badge-green','Normal'];
-    return `<tr>
-      <td style="color:var(--text3);font-size:12px">${a.ref}</td>
-      <td><span style="margin-right:6px">${cat.icone}</span><strong>${a.nom}</strong></td>
-      <td><span class="badge badge-blue">${cat.nom}</span></td>
-      <td>
-        <div class="stock-gauge">
-          <div class="gauge-bar"><div class="gauge-fill" style="width:${Math.min(100,Math.round(qSite/(a.seuilAlerte*3||1)*100))}%;background:${qSite===0?'var(--red)':qSite<=a.seuilAlerte?'var(--yellow)':'var(--green)'}"></div></div>
-          <span class="gauge-val">${fmtNum(qSite)} <small style="color:var(--text3)">${a.unite}</small></span>
-        </div>
-      </td>
-      <td>${fmt(a.prixAchat)}</td>
-      <td style="font-weight:700">${fmt(a.prix)}</td>
-      <td style="color:${margePct>=20?'var(--green)':'var(--yellow)'}">+${margePct}%</td>
-      <td><span class="badge ${etat[0]}">${etat[1]}</span></td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick="modalEditArticle('${a.id}')" title="Modifier">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteArticle('${a.id}')" title="Supprimer">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('') || `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-title">Aucun article</div></div></td></tr>`;
-  // update pills
-  c.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
-  c.querySelectorAll('.cat-pill')[catId ? categories.findIndex(c=>c.id===catId)+1 : 0]?.classList.add('active');
+  document.querySelectorAll('.arts-cat-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.cat === catId);
+  });
+  renderArticlesGrid();
 }
 
 function articleFormHtml(a={}) {
+  const imgVal = a.image || '';
   return `
+  <style>
+    .img-upload-zone {
+      border:2px dashed var(--border); border-radius:12px;
+      padding:0; cursor:pointer; transition:all .15s;
+      overflow:hidden; position:relative;
+      background:var(--card2);
+      display:flex; align-items:center; justify-content:center;
+      min-height:140px;
+    }
+    .img-upload-zone:hover { border-color:var(--accent); background:var(--accent-glow); }
+    .img-upload-zone img { width:100%; height:140px; object-fit:cover; display:block; }
+    .img-upload-placeholder {
+      display:flex; flex-direction:column; align-items:center; gap:6px;
+      color:var(--text3); padding:24px;
+    }
+    .img-upload-placeholder span { font-size:32px; }
+    .img-upload-placeholder p { font-size:12px; font-weight:600; margin:0; }
+    .img-upload-placeholder small { font-size:11px; }
+    #img-remove-btn {
+      position:absolute; top:8px; right:8px;
+      background:rgba(0,0,0,.6); color:#fff; border:none;
+      border-radius:50%; width:28px; height:28px; cursor:pointer;
+      font-size:14px; display:flex; align-items:center; justify-content:center;
+    }
+    .form-section-label {
+      font-size:11px; font-weight:700; letter-spacing:.8px;
+      text-transform:uppercase; color:var(--text3);
+      margin:16px 0 10px; padding-bottom:6px;
+      border-bottom:1px solid var(--border);
+    }
+  </style>
+
+  <div class="form-section-label">📸 Image de l'article</div>
+  <div class="img-upload-zone" id="img-zone" onclick="document.getElementById('f-img-input').click()">
+    ${imgVal
+      ? `<img id="img-preview" src="${imgVal}" alt="aperçu">
+         <button id="img-remove-btn" onclick="event.stopPropagation();removeArticleImage()" title="Supprimer">✕</button>`
+      : `<div class="img-upload-placeholder" id="img-placeholder">
+           <span>📷</span>
+           <p>Cliquer pour ajouter une photo</p>
+           <small>JPG, PNG — max 2 Mo</small>
+         </div>`}
+  </div>
+  <input type="file" id="f-img-input" accept="image/*" style="display:none" onchange="handleArticleImageUpload(this)">
+
+  <div class="form-section-label">📋 Informations</div>
   <div class="form-row">
-    <div class="form-group"><label>Nom de l'article *</label><input id="f-nom" value="${a.nom||''}" placeholder="Ex: Clou 50mm"></div>
-    <div class="form-group"><label>Référence</label><input id="f-ref" value="${a.ref||''}" placeholder="Ex: QUI-001"></div>
+    <div class="form-group"><label>Nom de l'article *</label><input id="f-nom" value="${esc(a.nom||'')}" placeholder="Ex: Clou 50mm"></div>
+    <div class="form-group"><label>Référence</label><input id="f-ref" value="${esc(a.ref||'')}" placeholder="Ex: QUI-001"></div>
   </div>
   <div class="form-row">
     <div class="form-group"><label>Catégorie</label>
@@ -2500,17 +2675,20 @@ function articleFormHtml(a={}) {
       <select id="f-fourn"><option value="">— Aucun —</option>${fournisseurs.map(f=>`<option value="${f.id}" ${a.fournisseurId===f.id?'selected':''}>${f.nom}</option>`).join('')}</select>
     </div>
   </div>
+
+  <div class="form-section-label">💰 Prix & Stock</div>
   <div class="form-row three">
     <div class="form-group"><label>Prix achat (${config.devise})</label><input id="f-pa" type="number" min="0" value="${a.prixAchat||0}"></div>
     <div class="form-group"><label>Prix vente (${config.devise})</label><input id="f-pv" type="number" min="0" value="${a.prix||0}"></div>
-    <div class="form-group"><label>Unité de mesure</label><input id="f-unite" value="${a.unite||'pcs'}" placeholder="pcs, kg, m..."></div>
+    <div class="form-group"><label>Unité</label><input id="f-unite" value="${esc(a.unite||'pcs')}" placeholder="pcs, kg, m..."></div>
   </div>
   <div class="form-row">
     <div class="form-group"><label>Stock actuel (${getCurrentSite().nom})</label><input id="f-qte" type="number" min="0" value="${getStock(a)}"></div>
     <div class="form-group"><label>Seuil d'alerte</label><input id="f-seuil" type="number" min="0" value="${a.seuilAlerte||5}"></div>
   </div>
+
+  <div class="form-section-label">🔖 Code-barres</div>
   <div class="form-group">
-    <label>Code-barres (EAN-13, Code128, QR...)</label>
     <div style="display:flex;gap:8px;align-items:flex-start">
       <div style="flex:1">
         <input id="f-barcode" value="${esc(a.barcode||'')}" placeholder="Ex: 3760168930016" oninput="previewBarcode(this.value)">
@@ -2523,8 +2701,31 @@ function articleFormHtml(a={}) {
   </div>`;
 }
 
+let _pendingArticleImage = undefined; // undefined = pas changé, null = supprimée, string = nouvelle
+
+function handleArticleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { toast('Image trop lourde (max 2 Mo)', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _pendingArticleImage = e.target.result;
+    const zone = document.getElementById('img-zone');
+    zone.innerHTML = `<img id="img-preview" src="${e.target.result}" alt="aperçu">
+      <button id="img-remove-btn" onclick="event.stopPropagation();removeArticleImage()" title="Supprimer">✕</button>`;
+  };
+  reader.readAsDataURL(file);
+}
+function removeArticleImage() {
+  _pendingArticleImage = null;
+  const zone = document.getElementById('img-zone');
+  zone.innerHTML = `<div class="img-upload-placeholder" id="img-placeholder">
+    <span>📷</span><p>Cliquer pour ajouter une photo</p><small>JPG, PNG — max 2 Mo</small>
+  </div>`;
+}
+
 function getArticleFormData() {
-  return {
+  const d = {
     nom: document.getElementById('f-nom').value.trim(),
     ref: document.getElementById('f-ref').value.trim() || 'ART-' + Date.now().toString().slice(-4),
     catId: document.getElementById('f-cat').value,
@@ -2536,34 +2737,39 @@ function getArticleFormData() {
     seuilAlerte: +document.getElementById('f-seuil').value,
     barcode: (document.getElementById('f-barcode')?.value||'').trim() || undefined,
   };
+  if (_pendingArticleImage !== undefined) d.image = _pendingArticleImage || undefined;
+  return d;
 }
 
 function modalNouvelArticle() {
+  _pendingArticleImage = undefined;
   openModal('Nouvel article', articleFormHtml(),
     `<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
-     <button class="btn btn-primary" onclick="saveNewArticle()">💾 Enregistrer</button>`);
+     <button class="btn btn-primary" onclick="saveNewArticle()">💾 Enregistrer</button>`, true);
 }
 function saveNewArticle() {
   const d = getArticleFormData();
   if(!d.nom) { toast('Nom requis', 'error'); return; }
   d.id = uid(); d.createdAt = Date.now();
   articles.push(d); save('articles', articles);
-  closeModal(); toast('Article créé avec succès');
+  closeModal(); toast('Article créé ✅');
   nav('articles');
 }
 function modalEditArticle(id) {
+  _pendingArticleImage = undefined;
   const a = getArt(id);
   openModal('Modifier l\'article', articleFormHtml(a),
     `<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
-     <button class="btn btn-primary" onclick="updateArticle('${id}')">💾 Sauvegarder</button>`);
+     <button class="btn btn-primary" onclick="updateArticle('${id}')">💾 Sauvegarder</button>`, true);
 }
 function updateArticle(id) {
   const d = getArticleFormData();
   if(!d.nom) { toast('Nom requis', 'error'); return; }
   const idx = articles.findIndex(a=>a.id===id);
   articles[idx] = { ...articles[idx], ...d };
+  if (_pendingArticleImage === null) delete articles[idx].image;
   save('articles', articles);
-  closeModal(); toast('Article mis à jour'); nav('articles');
+  closeModal(); toast('Article mis à jour ✅'); nav('articles');
 }
 function deleteArticle(id) {
   if(!confirm('Supprimer cet article ?')) return;
