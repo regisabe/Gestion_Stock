@@ -2430,65 +2430,102 @@ function pageArticles(c, ta) {
       background:var(--border); color:var(--text3);
     }
 
+    /* ── GRILLE ARTICLES ── */
     .arts-grid {
       display:grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap:16px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap:18px;
     }
+
+    /* ── CARTE ARTICLE ── */
     .art-card {
       background:var(--card);
       border:1.5px solid var(--border);
-      border-radius:16px;
+      border-radius:18px;
       overflow:hidden;
       cursor:pointer;
-      transition:all .2s cubic-bezier(.16,1,.3,1);
+      transition:all .22s cubic-bezier(.16,1,.3,1);
       position:relative;
       display:flex; flex-direction:column;
+      box-shadow:0 2px 8px rgba(0,0,0,.04);
     }
     .art-card:hover {
       border-color:var(--accent);
-      transform:translateY(-3px);
-      box-shadow:0 10px 28px rgba(43,110,240,.1);
+      transform:translateY(-4px);
+      box-shadow:0 14px 36px rgba(43,110,240,.13);
     }
+    .art-card:hover .art-card-actions { opacity:1; transform:translateY(0); }
+
+    /* ── ZONE IMAGE ── */
     .art-card-img {
-      width:100%; height:140px;
-      object-fit:cover;
-      background:var(--card2);
+      width:100%; height:155px;
+      flex-shrink:0; overflow:hidden;
+      position:relative;
       display:flex; align-items:center; justify-content:center;
-      font-size:48px;
-      flex-shrink:0;
     }
     .art-card-img img {
       width:100%; height:100%; object-fit:cover;
+      transition:transform .3s ease;
     }
+    .art-card:hover .art-card-img img { transform:scale(1.05); }
+    .art-card-img-placeholder {
+      width:100%; height:100%;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:6px;
+    }
+    .art-card-img-placeholder .art-emoji { font-size:52px; line-height:1; }
+    .art-card-img-placeholder .art-cat-name {
+      font-size:11px; font-weight:600; color:var(--text3);
+      opacity:.8;
+    }
+
+    /* Dégradé bas sur l'image quand photo présente */
+    .art-card-img::after {
+      content:'';
+      position:absolute; bottom:0; left:0; right:0; height:44px;
+      background:linear-gradient(to top, rgba(0,0,0,.18), transparent);
+      pointer-events:none; opacity:0; transition:opacity .2s;
+    }
+    .art-card:hover .art-card-img::after { opacity:1; }
+
+    /* ── CORPS ── */
     .art-card-body {
-      padding:14px 14px 12px;
-      flex:1; display:flex; flex-direction:column; gap:6px;
+      padding:14px 16px 10px;
+      flex:1; display:flex; flex-direction:column; gap:5px;
     }
     .art-card-ref {
-      font-size:10px; font-weight:700; letter-spacing:.8px;
+      font-size:10px; font-weight:700; letter-spacing:.9px;
       text-transform:uppercase; color:var(--text3);
     }
     .art-card-name {
       font-family:'Syne',sans-serif;
-      font-size:14px; font-weight:700;
+      font-size:14.5px; font-weight:800;
       color:var(--text); line-height:1.3;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .art-card-cat {
       font-size:11px; color:var(--text3);
+      display:flex; align-items:center; gap:4px;
+    }
+    .art-card-divider {
+      height:1px; background:var(--border);
+      margin:6px 0;
     }
     .art-card-prices {
-      display:flex; align-items:baseline; gap:6px; margin-top:2px;
+      display:flex; align-items:center; gap:6px; flex-wrap:wrap;
     }
     .art-card-price {
       font-family:'Syne',sans-serif;
-      font-size:16px; font-weight:800; color:var(--accent);
+      font-size:17px; font-weight:800; color:var(--accent);
+      line-height:1;
     }
     .art-card-pa {
       font-size:11px; color:var(--text3); text-decoration:line-through;
     }
     .art-card-marge {
+      margin-left:auto;
       font-size:11px; font-weight:700;
+      padding:2px 7px; border-radius:8px;
     }
     .art-card-stock {
       display:flex; align-items:center; gap:8px; margin-top:4px;
@@ -2497,19 +2534,41 @@ function pageArticles(c, ta) {
       flex:1; height:5px; background:var(--border);
       border-radius:3px; overflow:hidden;
     }
-    .art-card-gauge-fill { height:100%; border-radius:3px; }
-    .art-card-qty { font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; }
+    .art-card-gauge-fill { height:100%; border-radius:3px; transition:width .4s; }
+    .art-card-qty {
+      font-size:12px; font-weight:800; color:var(--text); white-space:nowrap;
+    }
+
+    /* ── ACTIONS (slide depuis le bas) ── */
     .art-card-actions {
-      display:flex; gap:6px; padding:10px 14px;
+      display:flex; gap:6px; padding:10px 14px 12px;
       border-top:1px solid var(--border);
       background:var(--card2);
+      opacity:0; transform:translateY(4px);
+      transition:all .18s ease;
     }
-    .art-card-actions .btn { flex:1; justify-content:center; }
+    .art-card:hover .art-card-actions { opacity:1; transform:translateY(0); }
+    .art-card-actions .btn { flex:1; justify-content:center; font-size:12px; }
+
+    /* ── BADGE STATUT ── */
     .art-card-status {
       position:absolute; top:10px; right:10px;
-      font-size:10px; font-weight:700; padding:3px 8px;
-      border-radius:10px;
+      font-size:10px; font-weight:700; padding:3px 9px;
+      border-radius:10px; backdrop-filter:blur(4px);
+      box-shadow:0 2px 6px rgba(0,0,0,.12);
     }
+
+    /* ── BADGE IMAGE (si photo ajoutée) ── */
+    .art-img-badge {
+      position:absolute; bottom:8px; left:10px;
+      background:rgba(0,0,0,.45); color:#fff; backdrop-filter:blur(4px);
+      font-size:9px; font-weight:700; padding:2px 8px;
+      border-radius:8px; letter-spacing:.5px;
+      opacity:0; transition:opacity .2s;
+    }
+    .art-card:hover .art-img-badge { opacity:1; }
+
+    /* ── EMPTY STATE ── */
     .arts-empty {
       grid-column:1/-1;
       padding:60px 20px; text-align:center; color:var(--text3);
@@ -2518,15 +2577,19 @@ function pageArticles(c, ta) {
     .arts-empty .empty-title { font-size:16px; font-weight:700; color:var(--text2); margin-bottom:6px; }
     .arts-empty .empty-sub { font-size:13px; }
 
+    /* ── RESPONSIVE ── */
     @media (max-width:768px) {
-      .arts-grid { grid-template-columns: repeat(2, 1fr); gap:10px; }
-      .art-card-img { height:110px; font-size:36px; }
-      .art-card-body { padding:10px 10px 8px; }
+      .arts-grid { grid-template-columns: repeat(2, 1fr); gap:12px; }
+      .art-card-img { height:120px; }
+      .art-card-img-placeholder .art-emoji { font-size:38px; }
+      .art-card-body { padding:10px 12px 8px; gap:4px; }
       .art-card-name { font-size:13px; }
-      .art-card-price { font-size:14px; }
+      .art-card-price { font-size:15px; }
+      .art-card-actions { opacity:1; transform:none; }
     }
     @media (max-width:400px) {
       .arts-grid { grid-template-columns: 1fr 1fr; gap:8px; }
+      .art-card-img { height:100px; }
     }
   </style>
 
@@ -2573,26 +2636,46 @@ function renderArticlesGrid() {
     const pct = Math.min(100, Math.round(qSite / (a.seuilAlerte * 3 || 1) * 100));
     const stockColor = qSite === 0 ? 'var(--red)' : qSite <= a.seuilAlerte ? 'var(--yellow)' : 'var(--green)';
     const statusCls = qSite === 0 ? 'badge badge-red' : qSite <= a.seuilAlerte ? 'badge badge-yellow' : 'badge badge-green';
-    const statusTxt = qSite === 0 ? 'Rupture' : qSite <= a.seuilAlerte ? 'Critique' : 'Normal';
+    const statusTxt = qSite === 0 ? '● Rupture' : qSite <= a.seuilAlerte ? '● Critique' : '● Normal';
+    const margeColor = marge >= 20 ? 'var(--green)' : marge >= 5 ? 'var(--yellow)' : 'var(--red)';
+    const margeBg = marge >= 20 ? 'var(--green-bg)' : marge >= 5 ? 'var(--yellow-bg)' : 'var(--red-bg)';
+    const catColor = cat.couleur || '#3b82f6';
+
+    // Zone image : photo si dispo, sinon placeholder coloré avec icône de catégorie
     const imgHtml = a.image
-      ? `<div class="art-card-img"><img src="${a.image}" alt="${esc(a.nom)}" loading="lazy"></div>`
-      : `<div class="art-card-img" style="background:linear-gradient(135deg,${cat.couleur||'#3b82f6'}18,${cat.couleur||'#3b82f6'}08)">${cat.icone}</div>`;
+      ? `<div class="art-card-img">
+           <img src="${a.image}" alt="${esc(a.nom)}" loading="lazy">
+           <span class="art-img-badge">📷 PHOTO</span>
+         </div>`
+      : `<div class="art-card-img">
+           <div class="art-card-img-placeholder"
+             style="background:linear-gradient(145deg,${catColor}20,${catColor}08)">
+             <span class="art-emoji">${cat.icone}</span>
+             <span class="art-cat-name">${esc(cat.nom)}</span>
+           </div>
+         </div>`;
+
     return `
-    <div class="art-card">
+    <div class="art-card" onclick="modalEditArticle('${a.id}')">
       ${imgHtml}
       <span class="art-card-status ${statusCls}">${statusTxt}</span>
       <div class="art-card-body">
-        <div class="art-card-ref">${esc(a.ref||'')}</div>
-        <div class="art-card-name">${esc(a.nom)}</div>
-        <div class="art-card-cat">${cat.icone} ${cat.nom}</div>
+        <div class="art-card-ref">${esc(a.ref||'—')}</div>
+        <div class="art-card-name" title="${esc(a.nom)}">${esc(a.nom)}</div>
+        <div class="art-card-cat">${cat.icone} <span>${esc(cat.nom)}</span></div>
+        <div class="art-card-divider"></div>
         <div class="art-card-prices">
           <span class="art-card-price">${fmt(a.prix)}</span>
           ${a.prixAchat ? `<span class="art-card-pa">${fmt(a.prixAchat)}</span>` : ''}
-          <span class="art-card-marge" style="color:${marge>=20?'var(--green)':'var(--yellow)'}">+${marge}%</span>
+          ${a.prixAchat ? `<span class="art-card-marge" style="color:${margeColor};background:${margeBg}">+${marge}%</span>` : ''}
         </div>
         <div class="art-card-stock">
-          <div class="art-card-gauge"><div class="art-card-gauge-fill" style="width:${pct}%;background:${stockColor}"></div></div>
-          <span class="art-card-qty" style="color:${stockColor}">${fmtNum(qSite)} <small style="font-weight:400;color:var(--text3)">${a.unite}</small></span>
+          <div class="art-card-gauge">
+            <div class="art-card-gauge-fill" style="width:${pct}%;background:${stockColor}"></div>
+          </div>
+          <span class="art-card-qty" style="color:${stockColor}">
+            ${fmtNum(qSite)} <small style="font-weight:400;color:var(--text3)">${a.unite}</small>
+          </span>
         </div>
       </div>
       <div class="art-card-actions">
@@ -2619,27 +2702,39 @@ function articleFormHtml(a={}) {
   return `
   <style>
     .img-upload-zone {
-      border:2px dashed var(--border); border-radius:12px;
-      padding:0; cursor:pointer; transition:all .15s;
+      border:2px dashed var(--border); border-radius:14px;
+      padding:0; cursor:pointer; transition:all .2s;
       overflow:hidden; position:relative;
       background:var(--card2);
       display:flex; align-items:center; justify-content:center;
-      min-height:140px;
+      min-height:160px;
     }
     .img-upload-zone:hover { border-color:var(--accent); background:var(--accent-glow); }
-    .img-upload-zone img { width:100%; height:140px; object-fit:cover; display:block; }
+    .img-upload-zone img { width:100%; height:160px; object-fit:cover; display:block; }
     .img-upload-placeholder {
-      display:flex; flex-direction:column; align-items:center; gap:6px;
-      color:var(--text3); padding:24px;
+      display:flex; flex-direction:column; align-items:center; gap:8px;
+      color:var(--text3); padding:28px;
     }
-    .img-upload-placeholder span { font-size:32px; }
-    .img-upload-placeholder p { font-size:12px; font-weight:600; margin:0; }
-    .img-upload-placeholder small { font-size:11px; }
+    .img-upload-placeholder .up-icon {
+      width:52px; height:52px; border-radius:14px;
+      background:var(--border); display:flex; align-items:center;
+      justify-content:center; font-size:26px;
+      transition:all .2s;
+    }
+    .img-upload-zone:hover .up-icon { background:rgba(43,110,240,.15); transform:scale(1.05); }
+    .img-upload-placeholder p { font-size:13px; font-weight:700; margin:0; color:var(--text2); }
+    .img-upload-placeholder small { font-size:11px; color:var(--text3); }
     #img-remove-btn {
       position:absolute; top:8px; right:8px;
-      background:rgba(0,0,0,.6); color:#fff; border:none;
-      border-radius:50%; width:28px; height:28px; cursor:pointer;
+      background:rgba(0,0,0,.65); color:#fff; border:none;
+      border-radius:50%; width:30px; height:30px; cursor:pointer;
       font-size:14px; display:flex; align-items:center; justify-content:center;
+      transition:background .15s;
+    }
+    #img-remove-btn:hover { background:var(--red); }
+    .img-size-note {
+      display:inline-flex; align-items:center; gap:5px;
+      font-size:11px; color:var(--text3); margin-top:6px;
     }
     .form-section-label {
       font-size:11px; font-weight:700; letter-spacing:.8px;
@@ -2653,13 +2748,14 @@ function articleFormHtml(a={}) {
   <div class="img-upload-zone" id="img-zone" onclick="document.getElementById('f-img-input').click()">
     ${imgVal
       ? `<img id="img-preview" src="${imgVal}" alt="aperçu">
-         <button id="img-remove-btn" onclick="event.stopPropagation();removeArticleImage()" title="Supprimer">✕</button>`
+         <button id="img-remove-btn" onclick="event.stopPropagation();removeArticleImage()" title="Supprimer l'image">✕</button>`
       : `<div class="img-upload-placeholder" id="img-placeholder">
-           <span>📷</span>
+           <div class="up-icon">📷</div>
            <p>Cliquer pour ajouter une photo</p>
            <small>JPG, PNG — max 2 Mo</small>
          </div>`}
   </div>
+  <div class="img-size-note">💡 L'image s'affichera en haut de la carte article</div>
   <input type="file" id="f-img-input" accept="image/*" style="display:none" onchange="handleArticleImageUpload(this)">
 
   <div class="form-section-label">📋 Informations</div>
@@ -2711,8 +2807,8 @@ function handleArticleImageUpload(input) {
   reader.onload = e => {
     _pendingArticleImage = e.target.result;
     const zone = document.getElementById('img-zone');
-    zone.innerHTML = `<img id="img-preview" src="${e.target.result}" alt="aperçu">
-      <button id="img-remove-btn" onclick="event.stopPropagation();removeArticleImage()" title="Supprimer">✕</button>`;
+    zone.innerHTML = `<img id="img-preview" src="${e.target.result}" alt="aperçu" style="width:100%;height:160px;object-fit:cover;display:block">
+      <button id="img-remove-btn" onclick="event.stopPropagation();removeArticleImage()" title="Supprimer l'image">✕</button>`;
   };
   reader.readAsDataURL(file);
 }
@@ -2720,7 +2816,9 @@ function removeArticleImage() {
   _pendingArticleImage = null;
   const zone = document.getElementById('img-zone');
   zone.innerHTML = `<div class="img-upload-placeholder" id="img-placeholder">
-    <span>📷</span><p>Cliquer pour ajouter une photo</p><small>JPG, PNG — max 2 Mo</small>
+    <div class="up-icon">📷</div>
+    <p>Cliquer pour ajouter une photo</p>
+    <small>JPG, PNG — max 2 Mo</small>
   </div>`;
 }
 
