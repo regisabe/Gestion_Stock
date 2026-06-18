@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MagasinPro — Gestion de Stock</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f4f9fe;
@@ -92,7 +92,7 @@
     border-radius: 9px;
   }
   .brand-name {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 15px;
     font-weight: 800;
     color: var(--text);
@@ -187,7 +187,7 @@
   }
   .topbar-left { display: flex; align-items: center; gap: 12px; }
   .page-title {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 20px;
     font-weight: 700;
   }
@@ -270,7 +270,7 @@
     font-size: 28px; margin-bottom: 12px;
   }
   .stat-value {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 26px; font-weight: 800;
     color: var(--text);
     line-height: 1;
@@ -303,7 +303,7 @@
     background: #fafcff;
   }
   .table-title {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 15px;
     font-weight: 700;
   }
@@ -375,7 +375,7 @@
     display: flex; align-items: center; justify-content: space-between;
   }
   .modal-head h3 {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 17px; font-weight: 700;
   }
   .modal-close {
@@ -429,7 +429,7 @@
     margin-bottom: 18px; gap: 12px; flex-wrap: wrap;
   }
   .section-head h2 {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 17px; font-weight: 700;
   }
 
@@ -504,25 +504,88 @@
   .pos-products {
     flex: 1; overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 16px;
     padding: 4px;
     align-content: start;
   }
+
+  /* ── CARTE PRODUIT POS (même esprit visuel que le module Articles) ── */
   .pos-product-card {
     background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 14px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
     cursor: pointer;
-    text-align: center;
-    transition: all 0.15s;
+    text-align: left;
+    position: relative;
+    display: flex; flex-direction: column;
+    transition: all .22s cubic-bezier(.16,1,.3,1);
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
   }
   .pos-product-card:hover {
     border-color: var(--accent);
-    background: var(--accent-glow);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(43,110,240,.14);
   }
+  .pos-product-card:active { transform: translateY(-1px) scale(.98); }
+
+  .pos-prod-img {
+    width: 100%; height: 86px; flex-shrink: 0;
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pos-prod-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
+  .pos-product-card:hover .pos-prod-img img { transform: scale(1.06); }
+  .pos-prod-icon { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,.06)); }
+
+  /* Bouton "+" flottant qui apparaît au survol pour confirmer l'ajout au panier */
+  .pos-prod-add {
+    position: absolute; bottom: -6px; right: 8px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 700; line-height: 1;
+    box-shadow: 0 6px 14px rgba(43,110,240,.4);
+    opacity: 0; transform: translateY(6px) scale(.7);
+    transition: all .18s cubic-bezier(.34,1.56,.64,1);
+    pointer-events: none;
+  }
+  .pos-product-card:hover .pos-prod-add { opacity: 1; transform: translateY(0) scale(1); }
+
+  /* Badge "déjà dans le panier" — touche perso : visible d'un coup d'oeil en caisse */
+  .pos-prod-incart {
+    position: absolute; top: 8px; right: 8px;
+    background: var(--green); color: #fff;
+    font-size: 10.5px; font-weight: 800;
+    min-width: 20px; height: 20px; padding: 0 5px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.18);
+    animation: posPop .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes posPop { from { transform: scale(.4); opacity:.4; } to { transform: scale(1); opacity:1; } }
+
+  .pos-prod-body {
+    padding: 10px 11px 11px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .pos-prod-name {
+    font-size: 12.5px; font-weight: 700; color: var(--text);
+    line-height: 1.3;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pos-prod-price {
+    font-family: 'Georgia', serif;
+    font-size: 15px; font-weight: 800; color: var(--accent);
+    line-height: 1;
+  }
+  .pos-prod-stockrow { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .pos-prod-gauge { flex: 1; height: 4px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .pos-prod-gauge-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+  .pos-prod-stock { font-size: 9.5px; color: var(--text3); white-space: nowrap; font-weight: 600; }
+
+  /* anciens noms conservés pour compat éventuelle */
   .pos-product-card .prod-icon { font-size: 28px; margin-bottom: 8px; }
   .pos-product-card .prod-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; color: var(--text); }
   .pos-product-card .prod-price { font-size: 13px; font-weight: 700; color: var(--accent); }
@@ -531,7 +594,7 @@
   .cart-head {
     padding: 16px 20px;
     border-bottom: 1px solid var(--border);
-    font-family: 'Syne', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 15px; font-weight: 700;
     background: #fafcff;
   }
@@ -567,7 +630,7 @@
   .cart-total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .cart-total-label { font-size: 13px; color: var(--text2); }
   .cart-total-val { font-size: 13px; font-weight: 600; color: var(--text); }
-  .cart-grand { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--accent); }
+  .cart-grand { font-family: 'Georgia', serif; font-size: 20px; font-weight: 800; color: var(--accent); }
 
   /* ── TOAST ── */
   #toast {
@@ -628,7 +691,7 @@
     padding: 20px;
   }
   .rapport-card-title {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 14px; font-weight: 700;
     margin-bottom: 16px;
     display: flex; align-items: center; gap: 8px;
@@ -1246,12 +1309,16 @@
     .pos-tab-bar { display: flex; margin-bottom: 10px; }
     .pos-products {
       grid-template-columns: repeat(3, 1fr) !important;
-      gap: 8px;
+      gap: 10px;
     }
-    .pos-product-card { padding: 10px 6px; border-radius: 12px; }
-    .pos-product-card .prod-icon { font-size: 24px; }
-    .pos-product-card .prod-name { font-size: 11px; line-height: 1.3; }
-    .pos-product-card .prod-price { font-size: 12px; font-weight: 800; }
+    .pos-product-card { border-radius: 12px; }
+    .pos-prod-img { height: 64px; }
+    .pos-prod-icon { font-size: 24px; }
+    .pos-prod-body { padding: 7px 8px 8px; gap: 3px; }
+    .pos-prod-name { font-size: 11px; line-height: 1.3; }
+    .pos-prod-price { font-size: 13px; font-weight: 800; }
+    .pos-prod-stock { font-size: 8.5px; }
+    .pos-prod-add { width: 24px; height: 24px; font-size: 14px; opacity: 1; transform: none; }
     .pos-right {
       position: fixed; inset: 56px 0 calc(64px + env(safe-area-inset-bottom,0px)) 0;
       z-index: 50; border-radius: 0; display: none; flex-direction: column;
@@ -1332,7 +1399,7 @@
   #scanner-ctx-label {
     width: 100%;
     text-align: center;
-    font-family: 'Syne', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 28px;
     font-weight: 700;
     color: #fff;
@@ -1944,7 +2011,7 @@ function refreshBranding() {
       // Fallback: initiales colorées
       const initiales = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const couleur = config.couleur || '#1a56db';
-      brandIcon.innerHTML = `<div style="width:100%;height:100%;background:${couleur};border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff">${initiales}</div>`;
+      brandIcon.innerHTML = `<div style="width:100%;height:100%;background:${couleur};border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Georgia',serif;font-size:15px;font-weight:800;color:#fff">${initiales}</div>`;
     }
   }
 }
@@ -2275,7 +2342,7 @@ function dashboard(c, ta) {
       margin-bottom: 28px;
     }
     .dash-greeting {
-      font-family: 'Syne', sans-serif;
+      font-family: 'Georgia', serif;
       font-size: 22px; font-weight: 800;
       color: var(--text);
       margin-bottom: 4px;
@@ -2340,7 +2407,7 @@ function dashboard(c, ta) {
     .mod-card:hover .mod-icon-wrap { transform: scale(1.1); }
 
     .mod-label {
-      font-family: 'Syne', sans-serif;
+      font-family: 'Georgia', serif;
       font-size: 13px; font-weight: 700;
       color: var(--text);
       line-height: 1.25;
@@ -2498,7 +2565,7 @@ function pageArticles(c, ta) {
       text-transform:uppercase; color:var(--text3);
     }
     .art-card-name {
-      font-family:'Syne',sans-serif;
+      font-family:'Georgia',serif;
       font-size:14.5px; font-weight:800;
       color:var(--text); line-height:1.3;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -2515,7 +2582,7 @@ function pageArticles(c, ta) {
       display:flex; align-items:center; gap:6px; flex-wrap:wrap;
     }
     .art-card-price {
-      font-family:'Syne',sans-serif;
+      font-family:'Georgia',serif;
       font-size:17px; font-weight:800; color:var(--accent);
       line-height:1;
     }
@@ -2893,7 +2960,7 @@ function pageCategories(c, ta) {
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:28px">${cat.icone}</span>
           <div>
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${cat.nom}</div>
+            <div style="font-family:'Georgia',serif;font-weight:700;font-size:15px">${cat.nom}</div>
             <div style="font-size:12px;color:var(--text3)">${articles.filter(a=>a.catId===cat.id).length} article(s)</div>
           </div>
         </div>
@@ -2903,7 +2970,7 @@ function pageCategories(c, ta) {
         </div>
       </div>
       <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Valeur stock</div>
-      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--green)">
+      <div style="font-family:'Georgia',serif;font-size:16px;font-weight:700;color:var(--green)">
         ${fmt(articles.filter(a=>a.catId===cat.id).reduce((s,a)=>s+getStock(a)*a.prixAchat,0))}
       </div>
     </div>`).join('')}
@@ -3155,7 +3222,7 @@ function modalNouvelleEntree() {
   </div>
   <div style="background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:12px;margin-top:4px">
     <div style="font-size:12px;color:var(--text2)">Total entrée</div>
-    <div id="fe-total" style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--green)">0 ${config.devise}</div>
+    <div id="fe-total" style="font-family:'Georgia',serif;font-size:20px;font-weight:800;color:var(--green)">0 ${config.devise}</div>
   </div>`,
   `<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
    <button class="btn btn-primary" onclick="saveEntree()">✅ Valider l'entrée</button>`);
@@ -3528,7 +3595,7 @@ function modalCloturerCaisse() {
 
   openModal('🔒 Clôture de caisse', `
   <div style="background:var(--card2);border-radius:10px;padding:16px;margin-bottom:16px">
-    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:12px">📊 Résumé de la session</div>
+    <div style="font-family:'Georgia',serif;font-weight:700;font-size:14px;margin-bottom:12px">📊 Résumé de la session</div>
     <div class="cart-total-row"><span class="cart-total-label">Ventes effectuées</span><span class="cart-total-val">${ventesSession.length}</span></div>
     <div class="cart-total-row"><span class="cart-total-label">CA total TTC</span><span class="cart-total-val" style="color:var(--green)">${fmt(caTotal)}</span></div>
     <div class="cart-total-row"><span class="cart-total-label">↳ dont Espèces</span><span class="cart-total-val">${fmt(caCash)}</span></div>
@@ -3581,6 +3648,41 @@ function confirmerCloture(sessId) {
 // ═══════════════════════════════════════════════════════
 //  PAGE: VENTES (POS)
 // ═══════════════════════════════════════════════════════
+
+// Génère le HTML d'une carte produit pour la grille du Point de Vente.
+// Reprend l'esprit visuel des cartes du module Articles (image/placeholder
+// coloré par catégorie, jauge de stock) + une touche perso adaptée à la
+// caisse : badge "déjà au panier" et bouton + flottant au survol.
+function posProductCardHtml(a) {
+  const cat = getCat(a.catId);
+  const qSite = getStock(a);
+  const pct = Math.min(100, Math.round(qSite / (a.seuilAlerte * 3 || 1) * 100));
+  const stockColor = qSite === 0 ? 'var(--red)' : qSite <= a.seuilAlerte ? 'var(--yellow)' : 'var(--green)';
+  const catColor = cat.couleur || '#3b82f6';
+  const inCart = cartItems.find(i => i.artId === a.id);
+
+  const imgHtml = a.image
+    ? `<div class="pos-prod-img"><img src="${a.image}" alt="${esc(a.nom)}" loading="lazy"></div>`
+    : `<div class="pos-prod-img" style="background:linear-gradient(145deg,${catColor}22,${catColor}0a)">
+         <span class="pos-prod-icon">${cat.icone}</span>
+       </div>`;
+
+  return `
+    <div class="pos-product-card" onclick="addToCart('${a.id}')" title="${esc(a.nom)}">
+      ${imgHtml}
+      ${inCart ? `<span class="pos-prod-incart">${inCart.qte}</span>` : ''}
+      <span class="pos-prod-add">+</span>
+      <div class="pos-prod-body">
+        <div class="pos-prod-name">${esc(a.nom)}</div>
+        <div class="pos-prod-price">${fmt(a.prix)}</div>
+        <div class="pos-prod-stockrow">
+          <div class="pos-prod-gauge"><div class="pos-prod-gauge-fill" style="width:${pct}%;background:${stockColor}"></div></div>
+          <span class="pos-prod-stock">${fmtNum(qSite)} ${a.unite}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
 function pageVentes(c, ta) {
   const sess = getActiveSession();
   const ventesMois = ventes.filter(v => v.date?.startsWith(today().slice(0,7)));
@@ -3633,15 +3735,7 @@ function pageVentes(c, ta) {
         </select>
       </div>
       <div class="pos-products" id="pos-products">
-        ${artsDispo.map(a => {
-          const cat = getCat(a.catId);
-          return `<div class="pos-product-card" onclick="addToCart('${a.id}')">
-            <div class="prod-icon">${cat.icone}</div>
-            <div class="prod-name">${a.nom}</div>
-            <div class="prod-price">${fmt(a.prix)}</div>
-<div class="prod-stock">Stock: ${fmtNum(getStock(a))} ${a.unite}</div>
-          </div>`;
-        }).join('')}
+        ${artsDispo.map(a => posProductCardHtml(a)).join('')}
         ${artsDispo.length===0 ? `<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:40px">
           <div style="font-size:48px;margin-bottom:8px">📦</div>Aucun article disponible en stock</div>` : ''}
       </div>
@@ -3695,7 +3789,7 @@ function pageVentes(c, ta) {
           <span class="cart-total-val" style="color:var(--green)" id="cart-remise-val">—</span>
         </div>
         <div class="cart-total-row">
-          <span style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700">TOTAL TTC</span>
+          <span style="font-family:'Georgia',serif;font-size:17px;font-weight:700">TOTAL TTC</span>
           <span class="cart-grand" id="cart-total">0 ${config.devise}</span>
         </div>
         <button class="btn btn-primary" id="btn-payer"
@@ -3761,15 +3855,8 @@ function filterPOS() {
   if (catId) arts = arts.filter(a => a.catId === catId);
   const el = document.getElementById('pos-products');
   if (!el) return;
-  el.innerHTML = arts.map(a => {
-    const cat = getCat(a.catId);
-    return `<div class="pos-product-card" onclick="addToCart('${a.id}')">
-      <div class="prod-icon">${cat.icone}</div>
-      <div class="prod-name">${a.nom}</div>
-      <div class="prod-price">${fmt(a.prix)}</div>
-      <div class="prod-stock">Stock: ${fmtNum(a.qte)} ${a.unite}</div>
-    </div>`;
-  }).join('') || '<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:30px">Aucun résultat</div>';
+  el.innerHTML = arts.map(a => posProductCardHtml(a)).join('')
+    || '<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:30px">Aucun résultat</div>';
 }
 
 
@@ -3825,6 +3912,31 @@ function updatePosCartBadge() {
   }
 }
 
+// Met à jour uniquement les badges "déjà au panier" sur les cartes produits
+// déjà affichées, sans reconstruire toute la grille (fluide en caisse).
+function refreshPosProductBadges() {
+  const grid = document.getElementById('pos-products');
+  if (!grid) return;
+  grid.querySelectorAll('.pos-product-card').forEach(card => {
+    const existingBadge = card.querySelector('.pos-prod-incart');
+    const onclickAttr = card.getAttribute('onclick') || '';
+    const m = onclickAttr.match(/addToCart\('([^']+)'\)/);
+    if (!m) return;
+    const item = cartItems.find(i => i.artId === m[1]);
+    if (item) {
+      if (existingBadge) existingBadge.textContent = item.qte;
+      else {
+        const badge = document.createElement('span');
+        badge.className = 'pos-prod-incart';
+        badge.textContent = item.qte;
+        card.appendChild(badge);
+      }
+    } else if (existingBadge) {
+      existingBadge.remove();
+    }
+  });
+}
+
 function addToCart(artId) {
   const art = getArt(artId);
   if (!art) return;
@@ -3838,9 +3950,10 @@ function addToCart(artId) {
   }
   if (navigator.vibrate) navigator.vibrate(25);
   renderCart();
+  refreshPosProductBadges();
 }
 
-function removeFromCart(artId) { cartItems = cartItems.filter(i => i.artId !== artId); renderCart(); }
+function removeFromCart(artId) { cartItems = cartItems.filter(i => i.artId !== artId); renderCart(); refreshPosProductBadges(); }
 
 function changeQty(artId, delta) {
   const item = cartItems.find(i => i.artId === artId);
@@ -3849,6 +3962,7 @@ function changeQty(artId, delta) {
   item.qte = Math.max(1, Math.min(art?.qte||999, item.qte + delta));
   item.total = item.qte * item.prix * (1 - (item.remiseLigne||0)/100);
   renderCart();
+  refreshPosProductBadges();
 }
 
 function setQtyDirect(artId, val) {
@@ -3858,6 +3972,7 @@ function setQtyDirect(artId, val) {
   item.qte = Math.max(1, Math.min(art?.qte||999, +val||1));
   item.total = item.qte * item.prix * (1 - (item.remiseLigne||0)/100);
   renderCart();
+  refreshPosProductBadges();
 }
 
 function setLigneRemise(artId, pct) {
@@ -3876,7 +3991,7 @@ function setPrixLibre(artId, val) {
   renderCart();
 }
 
-function viderCart() { cartItems = []; renderCart(); }
+function viderCart() { cartItems = []; renderCart(); refreshPosProductBadges(); }
 
 function renderCart() {
   const el = document.getElementById('cart-items');
@@ -3968,7 +4083,7 @@ function renderCommandesEnAttente() {
   if (!el) return;
   if (commandesEnAttente.length === 0) { el.innerHTML = ''; return; }
   el.innerHTML = `
-    <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:8px">📌 Commandes en attente</div>
+    <div style="font-family:'Georgia',serif;font-size:13px;font-weight:700;margin-bottom:8px">📌 Commandes en attente</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       ${commandesEnAttente.map(cmd => `
         <div style="background:var(--card);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;cursor:pointer;min-width:130px"
@@ -4017,7 +4132,7 @@ function modalPaiement() {
     </div>
     <div style="text-align:right">
       <div style="font-size:12px;color:var(--text3)">Montant à encaisser</div>
-      <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--accent)">${fmt(totalFinal)}</div>
+      <div style="font-family:'Georgia',serif;font-size:26px;font-weight:800;color:var(--accent)">${fmt(totalFinal)}</div>
     </div>
   </div>
 
@@ -4255,7 +4370,7 @@ function encaisserCredit(venteId) {
   openModal(`Encaissement crédit — ${v.clientNom}`, `
   <div style="text-align:center;margin-bottom:16px">
     <div style="font-size:13px;color:var(--text2)">Montant à encaisser</div>
-    <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent)">${fmt(v.total)}</div>
+    <div style="font-family:'Georgia',serif;font-size:28px;font-weight:800;color:var(--accent)">${fmt(v.total)}</div>
   </div>
   <div class="form-group"><label>Mode de paiement</label>
     <select id="ecr-mode" style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
@@ -4430,7 +4545,7 @@ function voirCommande(id) {
       </tr>`;}).join('')}
     </tbody>
   </table></div>
-  <div style="text-align:right;margin-top:12px;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent)">
+  <div style="text-align:right;margin-top:12px;font-family:'Georgia',serif;font-size:18px;font-weight:800;color:var(--accent)">
     Total: ${fmt(cmd.total)}
   </div>`,
   `<button class="btn btn-ghost" onclick="closeModal()">Fermer</button>
@@ -4569,7 +4684,7 @@ function modalNouvelleCommande() {
     <div id="cmd-art-hint" style="font-size:11px;color:var(--text3);margin-top:6px"></div>
   </div>
   <div id="cmd-items-list"></div>
-  <div style="text-align:right;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent)" id="cmd-total-disp">Total: 0 ${config.devise}</div>
+  <div style="text-align:right;font-family:'Georgia',serif;font-size:18px;font-weight:800;color:var(--accent)" id="cmd-total-disp">Total: 0 ${config.devise}</div>
   <div class="form-group" style="margin-top:14px"><label>Notes / Observations</label>
     <textarea id="fcmd-notes" placeholder="Conditions spéciales, remarques..."></textarea>
   </div>`,
@@ -4946,12 +5061,12 @@ function rptVue() {
     .kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 16px;position:relative;overflow:hidden}
     .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-c,var(--accent))}
     .kpi-icon{font-size:24px;margin-bottom:8px}
-    .kpi-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1;margin-bottom:4px}
+    .kpi-val{font-family:'Georgia',serif;font-size:22px;font-weight:800;color:var(--text);line-height:1;margin-bottom:4px}
     .kpi-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
     .kpi-trend{font-size:11px;font-weight:700;margin-top:6px}
     .kpi-trend.up{color:var(--green)} .kpi-trend.dn{color:var(--red)} .kpi-trend.flat{color:var(--text3)}
     .rpt-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
-    .rpt-card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .rpt-card-title{font-family:'Georgia',serif;font-size:14px;font-weight:800;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
     .rpt-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
     .cat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
     .cat-bar-wrap{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
@@ -5052,7 +5167,7 @@ function rptVue() {
       const cat=getCat(a.catId);
       const pct=ca?((a.ca/ca)*100).toFixed(1):0;
       return `<tr>
-        <td><span style="font-family:'Syne',sans-serif;font-weight:800;color:var(--text3)">${i+1}</span></td>
+        <td><span style="font-family:'Georgia',serif;font-weight:800;color:var(--text3)">${i+1}</span></td>
         <td><strong>${esc(a.nom)}</strong><div style="font-size:11px;color:var(--text3)">${esc(a.ref||'')}</div></td>
         <td><span class="badge badge-blue">${cat.icone} ${esc(cat.nom)}</span></td>
         <td>${fmtNum(a.qteV)} ${esc(a.unite||'')}</td>
@@ -5696,7 +5811,7 @@ function configPageSecure(c, ta) {
       background:var(--accent-glow);border:1px solid rgba(43,110,240,.2);
       display:flex;align-items:center;justify-content:center;font-size:18px;
     }
-    .cfg-section-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--text);}
+    .cfg-section-title{font-family:'Georgia',serif;font-size:15px;font-weight:800;color:var(--text);}
     .cfg-section-sub{font-size:12px;color:var(--text3);margin-top:2px;}
 
     /* ── LOGO UPLOAD ── */
@@ -5729,14 +5844,14 @@ function configPageSecure(c, ta) {
     }
     .role-card-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
     .role-card-icon{font-size:22px;}
-    .role-card-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--text);}
+    .role-card-name{font-family:'Georgia',serif;font-size:14px;font-weight:800;color:var(--text);}
     .role-card-count{font-size:11px;color:var(--text3);margin-top:1px;}
     .role-card-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px;}
 
     /* ── DATA STATS ── */
     .data-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-bottom:20px;}
     .data-stat{background:var(--card2);border-radius:10px;padding:12px 14px;text-align:center;}
-    .data-stat-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent);}
+    .data-stat-val{font-family:'Georgia',serif;font-size:22px;font-weight:800;color:var(--accent);}
     .data-stat-lbl{font-size:11px;color:var(--text3);margin-top:2px;}
   </style>
 
@@ -7045,7 +7160,7 @@ if (!currentUser) {
   <div style="background:var(--card);border-radius:18px;width:100%;max-width:480px;box-shadow:0 32px 80px rgba(0,0,0,.2);overflow:hidden;">
     <div style="background:linear-gradient(135deg,var(--accent),var(--accent2));padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;">☁ Synchronisation — JSONBin.io</div>
+        <div style="font-family:'Georgia',serif;font-size:16px;font-weight:800;color:#fff;">☁ Synchronisation — JSONBin.io</div>
         <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;" id="sm-last-sync">—</div>
       </div>
       <button onclick="closeSyncModal()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;width:30px;height:30px;color:#fff;font-size:16px;cursor:pointer;">✕</button>
@@ -7074,7 +7189,7 @@ if (!currentUser) {
       <div id="sm-msg" style="display:none;padding:10px 13px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:14px;"></div>
 
       <div style="display:flex;gap:10px;">
-        <button onclick="doAppSync()" id="sm-btn" style="flex:1;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(43,110,240,.28);">☁ Synchroniser</button>
+        <button onclick="doAppSync()" id="sm-btn" style="flex:1;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'Georgia',serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(43,110,240,.28);">☁ Synchroniser</button>
       </div>
     </div>
   </div>
@@ -7239,7 +7354,7 @@ if (window.innerWidth <= 768) {
 
 </script>
 <!-- PWA : bouton installation -->
-<button id="pwa-install-btn" onclick="triggerInstall()" style="display:none;align-items:center;gap:7px;position:fixed;bottom:24px;right:24px;z-index:99;padding:12px 20px;background:#1a44c2;color:#fff;border:none;border-radius:14px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(26,68,194,.4);animation:slideUp .4s cubic-bezier(.16,1,.3,1);">
+<button id="pwa-install-btn" onclick="triggerInstall()" style="display:none;align-items:center;gap:7px;position:fixed;bottom:24px;right:24px;z-index:99;padding:12px 20px;background:#1a44c2;color:#fff;border:none;border-radius:14px;font-family:'Georgia',serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(26,68,194,.4);animation:slideUp .4s cubic-bezier(.16,1,.3,1);">
   📲 Installer l'application
 </button>
 <!-- PWA : bannière mise à jour -->
